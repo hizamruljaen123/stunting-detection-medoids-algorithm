@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 p-6">
+    <!-- Header -->
+    <div class="mb-8 text-center">
+        <h1 class="text-4xl font-bold text-indigo-800 mb-2">Dashboard Kecelakaan Lalu Lintas</h1>
+        <p class="text-gray-600">Kota Lhokseumawe - Analisis Data Kecelakaan</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Total Kecelakaan -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-xl animate-fade-in">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-white text-opacity-80">Total Kecelakaan</p>
+                        <h2 class="text-3xl font-bold text-white">{{ total_kecelakaan }}</h2>
+                    </div>
+                    <div class="text-white text-opacity-80">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="mt-2 text-sm text-white text-opacity-80">Seluruh Periode Data</p>
+            </div>
+        </div>
+
+        <!-- Total Korban Meninggal -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-xl animate-fade-in delay-100">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-600 p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-white text-opacity-80">Total Korban Meninggal</p>
+                        <h2 class="text-3xl font-bold text-white">{{ total_meninggal }}</h2>
+                    </div>
+                    <div class="text-white text-opacity-80">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="mt-2 text-sm text-white text-opacity-80">Seluruh Periode Data</p>
+            </div>
+        </div>
+
+        <!-- Gampong Rawan -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-xl animate-fade-in delay-200">
+            <div class="bg-gradient-to-r from-red-500 to-pink-600 p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-white text-opacity-80">Gampong Rawan</p>
+                        <h2 class="text-3xl font-bold text-white">{{ gampong_rawan }}</h2>
+                    </div>
+                    <div class="text-white text-opacity-80">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="mt-2 text-sm text-white text-opacity-80">Jumlah Gampong > 10 Kasus</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Jenis Kecelakaan Chart -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up">
+            <div class="bg-gray-800 p-4">
+                <h3 class="text-lg font-semibold text-white">Ringkasan Korban (Meninggal, Luka Berat, Luka Ringan)</h3>
+            </div>
+            <div class="p-4">
+                <canvas id="korbanSummaryChart" class="w-full h-80"></canvas>
+            </div>
+        </div>
+
+        <!-- Kecelakaan per Tahun Chart -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up delay-100">
+            <div class="bg-gray-800 p-4">
+                <h3 class="text-lg font-semibold text-white">Total Kecelakaan per Tahun</h3>
+            </div>
+            <div class="p-4">
+                <canvas id="kecelakaanTahunChart" class="w-full h-80"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up delay-200">
+        <div class="bg-gray-800 p-4">
+            <h3 class="text-lg font-semibold text-white">Peta Sebaran Klaster Kecelakaan</h3>
+        </div>
+        <div class="p-4">
+            {% if map_html %}
+                <div class="rounded-lg overflow-hidden border border-gray-200">
+                    {{ map_html|safe }}
+                </div>
+            {% else %}
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                Data peta tidak tersedia
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle sidebar
+document.addEventListener('DOMContentLoaded', function() {
+    // Prepare data for charts - Use |safe filter as Flask already provides JSON string
+    let korbanSummaryLabels, korbanSummaryData, kecelakaanTahunLabels, kecelakaanTahunData;
+    try {
+        korbanSummaryLabels = JSON.parse('{{ korban_summary_labels|safe }}');
+        korbanSummaryData = JSON.parse('{{ korban_summary_data|safe }}');
+        kecelakaanTahunLabels = JSON.parse('{{ kecelakaan_summary_labels|safe }}');
+        kecelakaanTahunData = JSON.parse('{{ kecelakaan_summary_data|safe }}');
+    } catch (e) {
+        console.error("Error parsing chart data from Flask:", e);
+        // Set to empty arrays to prevent further errors
+        korbanSummaryLabels = []; korbanSummaryData = []; kecelakaanTahunLabels = []; kecelakaanTahunData = [];
+    }
+
+
+    // Chart for Korban Summary (Pie Chart)
+    const korbanChartContainer = document.getElementById('korbanSummaryChart');
+    if (korbanChartContainer) {
+        // Check if data is valid and non-empty before creating chart
+        if (korbanSummaryLabels && korbanSummaryLabels.length > 0 && korbanSummaryData && korbanSummaryData.length > 0 && korbanSummaryData.some(d => d > 0)) {
+            const korbanCtx = korbanChartContainer.getContext('2d');
+            new Chart(korbanCtx, {
+                type: 'pie',
+                data: {
+                    labels: korbanSummaryLabels,
+                    datasets: [{
+                        data: korbanSummaryData,
+                        backgroundColor: [
+                            '#FF6384', // Meninggal
+                            '#FFCE56', // Luka Berat
+                            '#36A2EB'  // Luka Ringan
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribusi Korban'
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            });
+        } else {
+            // Display a message if no data
+            korbanChartContainer.parentElement.innerHTML = '<p class="text-center text-gray-500 py-10">Tidak ada data ringkasan korban untuk ditampilkan.</p>';
+        }
+    }
+
+    // Chart for Kecelakaan per Tahun (Bar Chart)
+    const kecelakaanChartContainer = document.getElementById('kecelakaanTahunChart');
+    if (kecelakaanChartContainer) {
+         // Check if data is valid and non-empty before creating chart
+        if (kecelakaanTahunLabels && kecelakaanTahunLabels.length > 0 && kecelakaanTahunData && kecelakaanTahunData.length > 0) {
+            const kecelakaanCtx = kecelakaanChartContainer.getContext('2d');
+            new Chart(kecelakaanCtx, {
+                type: 'bar',
+                data: {
+                    labels: kecelakaanTahunLabels,
+                    datasets: [{
+                        label: 'Total Kecelakaan',
+                        data: kecelakaanTahunData,
+                        backgroundColor: '#4BC0C0', // Teal color
+                        borderColor: '#4BC0C0',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            title: { display: true, text: 'Tahun' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { drawBorder: false },
+                            title: { display: true, text: 'Jumlah Kecelakaan' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                         title: { display: true, text: 'Jumlah Kecelakaan per Tahun' }
+                    },
+                    animation: { duration: 1500 }
+                }
+            });
+        } else {
+             // Display a message if no data
+            kecelakaanChartContainer.parentElement.innerHTML = '<p class="text-center text-gray-500 py-10">Tidak ada data kecelakaan per tahun untuk ditampilkan.</p>';
+        }
+    }
+});
+</script>
+{% endblock %}

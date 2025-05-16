@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Statistik Korban - Dashboard Kecelakaan{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800">Statistik Korban Kecelakaan</h1>
+        <p class="text-gray-600">Analisis data korban berdasarkan tingkat keparahan dan periode waktu.</p>
+    </div>
+
+    <!-- Chart: Distribusi Korban (Meninggal, Luka Berat, Luka Ringan) -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Distribusi Korban Berdasarkan Tingkat Keparahan</h2>
+        </div>
+        {% if pie_chart_korban %}
+            <div class="h-96"> <!-- Adjust height as needed -->
+                {{ pie_chart_korban|safe }}
+            </div>
+        {% else %}
+            <p class="text-gray-500">Data tidak tersedia untuk chart ini.</p>
+        {% endif %}
+    </div>
+
+    <!-- Chart: Total Korban per Tahun -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Total Korban per Tahun</h2>
+        </div>
+        {% if line_chart_korban_tahun %}
+            <div class="h-96"> <!-- Adjust height as needed -->
+                {{ line_chart_korban_tahun|safe }}
+            </div>
+        {% else %}
+            <p class="text-gray-500">Data tidak tersedia untuk chart ini.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Plotly.js is loaded in base.html if needed, or ensure it's loaded if charts are Plotly based -->
+<!-- If using Chart.js, ensure it's loaded and initialize charts here if needed, though Flask passes HTML directly -->
+{% endblock %}

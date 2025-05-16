@@ -1,0 +1,121 @@
+@startuml
+' Diagram Kasus Penggunaan
+left to right direction
+actor Pengguna
+
+rectangle Web {
+  usecase LihatDashboard
+  usecase LihatPetaInteraktif
+  usecase KelolaData
+  usecase LihatStatistikKecelakaan
+  usecase LihatStatistikKorban
+  usecase LihatDetailGampong
+}
+
+Pengguna -- LihatDashboard
+Pengguna -- LihatPetaInteraktif
+Pengguna -- KelolaData
+Pengguna -- LihatStatistikKecelakaan
+Pengguna -- LihatStatistikKorban
+Pengguna -- LihatDetailGampong
+
+@enduml
+
+@startuml
+' Diagram Activity
+|Pengguna|
+start
+:Pengguna mengakses sistem;
+|Web|
+partition Web {
+  :Menampilkan Informasi;
+  :Memproses Data;
+  :Berinteraksi dengan Database;
+}
+|Pengguna|
+:Melihat Informasi;
+end
+
+@enduml
+
+@startuml
+' Diagram Sekuens
+actor Pengguna
+participant Web
+participant Database
+participant Model
+
+Pengguna -> Web: Mengakses Dashboard
+activate Web
+Web -> Database: Ambil data ringkasan 
+activate Database
+Database -->> Web: Mengembalikan data ringkasan
+deactivate Database
+Web -> Model: Proses data untuk peta klaster
+activate Model
+Model -> Model: Klasterisasi K-Medoids
+Model -->> Web: Mengembalikan data klaster
+deactivate Model
+Web -> Web: Buat peta klaster
+Web -> Pengguna: Tampilkan Dashboard dengan peta
+deactivate Web
+
+@enduml
+
+@startuml
+' Diagram Kelas
+class Gampong {
+  id : int
+  nama_gampong : varchar
+}
+
+class Kecelakaan {
+  id : int
+  gampong_id : int
+  jumlah_kecelakaan : int
+  tahun : int
+}
+
+class Korban {
+  id : int
+  gampong_id : int
+  jumlah_meninggal : int
+  jumlah_luka_berat : int
+  jumlah_luka_ringan : int
+  tahun : int
+}
+
+class JenisKendaraan {
+  id : int
+  gampong_id : int
+  kendaraan_roda_dua : int
+  kendaraan_roda_4 : int
+  kendaraan_lebih_roda_4 : int
+  kendaraan_lainnya : int
+  tahun : int
+}
+
+class KondisiJalan {
+  id : int
+  gampong_id : int
+  jalan_berlubang : int
+  jalan_jalur_dua : int
+  jalan_tikungan : int
+  jalanan_sempit : int
+  tahun : int
+}
+
+class Koordinat {
+  id : int
+  gampong_id : int
+  latitude : decimal
+  longitude : decimal
+}
+
+Gampong "1" -- "*" Kecelakaan : berisi
+Gampong "1" -- "*" Korban : berisi
+Gampong "1" -- "*" JenisKendaraan : berisi
+Gampong "1" -- "*" KondisiJalan : berisi
+Gampong "1" -- "*" Koordinat : berisi
+
+@enduml

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Peta Interaktif Kecelakaan Lalu Lintas</h2>
+        <div class="flex space-x-2">
+            <button id="refreshMap" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh Data
+            </button>
+            <button id="clusterToggle" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md">
+                Cluster Mode
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="p-4 border-b border-gray-200 bg-gray-800 text-white">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
+                </svg>
+                <h3 class="text-lg font-semibold">Peta Sebaran Kecelakaan</h3>
+            </div>
+        </div>
+        
+        <div class="p-4">
+            <div id="map" class="w-full h-[600px] rounded-md border border-gray-200"></div>
+            
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-50 p-4 rounded-md">
+                    <h4 class="font-medium text-blue-800 mb-2">Legenda Peta</h4>
+                    <div id="legendContainer" class="space-y-2">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-red-500 mr-2"></div>
+                            <span class="text-sm">Klaster 1 - Tinggi</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-yellow-500 mr-2"></div>
+                            <span class="text-sm">Klaster 2 - Sedang</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
+                            <span class="text-sm">Klaster 3 - Rendah</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <h4 class="font-medium text-gray-800 mb-2">Filter Data</h4>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
+                            <select id="yearFilter" class="w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="all">Semua Tahun</option>
+                                {% for year_val in tahun_list %}
+                                <option value="{{ year_val }}">{{ year_val }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Gampong</label>
+                            <select id="gampongFilter" class="w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="all">Semua Gampong</option>
+                                {% for gampong_val in gampong_list %}
+                                <option value="{{ gampong_val }}">{{ gampong_val }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-md">
+                    <h4 class="font-medium text-green-800 mb-2">Statistik</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm">Total Kecelakaan:</span>
+                            <span class="text-sm font-medium" id="totalAccidents">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm">Korban:</span>
+                            <span class="text-sm font-medium" id="totalVictims">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm">Kecamatan Rawan:</span>
+                            <span class="text-sm font-medium" id="highRiskDistrict">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-lg flex items-center">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Memuat data...</span>
+    </div>
+</div>
+{% endblock %}

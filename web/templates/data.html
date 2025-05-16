@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 space-y-12">
+    <!-- Header Section -->
+    <header class="bg-white shadow-sm rounded-lg p-6 mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Manajemen Data Sistem</h1>
+                <p class="text-sm text-gray-600 mt-1">Kelola data master Gampong, Kecelakaan, Korban, dan lainnya.</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} mb-4 p-4 rounded-lg border-l-4 border-{{ category }}-500 bg-{{ category }}-50 text-{{ category }}-700">
+                {{ message }}
+                <button type="button" class="float-right focus:outline-none" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Data Gampong Section -->
+    <section id="gampong-section" class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Data Gampong</h3>
+            <button onclick="openModal('addGampongModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm">+ Tambah Gampong</button>
+        </div>
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="gampongTable">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Gampong</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in gampong_data %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <button onclick="openEditModal('editGampongModal', {{ item.id | tojson }}, {{ item.nama_gampong | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2">Edit</button>
+                                <form method="POST" action="{{ url_for('delete_gampong', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus {{ item.nama_gampong }}? Ini akan menghapus data terkait.');">
+                                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs">Hapus</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Data Kecelakaan Section -->
+    <section id="kecelakaan-section" class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Data Kecelakaan</h3>
+            <button onclick="openModal('addKecelakaanModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm">+ Tambah Kecelakaan</button>
+        </div>
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="kecelakaanTable">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gampong</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Kecelakaan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in kecelakaan_data %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jumlah_kecelakaan }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <button onclick="openEditKecelakaanModal({{ item.id | tojson }}, {{ item.gampong_id | tojson }}, {{ item.jumlah_kecelakaan | tojson }}, {{ item.tahun | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2">Edit</button>
+                                <form method="POST" action="{{ url_for('delete_kecelakaan', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus data kecelakaan ID {{ item.id }}?');">
+                                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs">Hapus</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Data Korban Section -->
+    <section id="korban-section" class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-gray-800 text-white px-6 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Data Korban</h3>
+            <button onclick="openModal('addKorbanModal')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm">+ Tambah Korban</button>
+        </div>
+        <div class="p-6">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="korbanTable">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gampong</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meninggal</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Berat</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Ringan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in korban_data %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jumlah_meninggal }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jumlah_luka_berat }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jumlah_luka_ringan }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <button onclick="openEditKorbanModal({{ item.id | tojson }}, {{ item.gampong_id | tojson }}, {{ item.jumlah_meninggal | tojson }}, {{ item.jumlah_luka_berat | tojson }}, {{ item.jumlah_luka_ringan | tojson }}, {{ item.tahun | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2">Edit</button>
+                                <form method="POST" action="{{ url_for('delete_korban', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus data korban ID {{ item.id }}?');">
+                                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs">Hapus</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- TODO: Add sections for Jenis Kendaraan, Kondisi Jalan, Koordinat with similar structure -->
+    <!-- Modals -->
+    <!-- Add Gampong Modal -->
+    <div id="addGampongModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Tambah Gampong Baru</h3>
+                <form method="POST" action="{{ url_for('add_gampong') }}" class="mt-2 space-y-4">
+                    <div>
+                        <label for="add_gampong_id" class="block text-sm font-medium text-gray-700 text-left">ID Gampong</label>
+                        <input type="number" name="gampong_id" id="add_gampong_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="add_nama_gampong" class="block text-sm font-medium text-gray-700 text-left">Nama Gampong</label>
+                        <input type="text" name="nama_gampong" id="add_nama_gampong" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            Simpan
+                        </button>
+                        <button type="button" onclick="closeModal('addGampongModal')" class="mt-2 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Batal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Gampong Modal -->
+    <div id="editGampongModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Gampong</h3>
+                <form method="POST" id="editGampongForm" class="mt-2 space-y-4">
+                    <input type="hidden" name="id" id="edit_gampong_id_field">
+                    <div>
+                        <label for="edit_nama_gampong" class="block text-sm font-medium text-gray-700 text-left">Nama Gampong</label>
+                        <input type="text" name="nama_gampong" id="edit_nama_gampong_field" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button type="submit" class="px-4 py-2 bg-yellow-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-300">
+                            Update
+                        </button>
+                         <button type="button" onclick="closeModal('editGampongModal')" class="mt-2 px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Batal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Kecelakaan Modal -->
+    <div id="addKecelakaanModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 text-center">Tambah Data Kecelakaan</h3>
+            <form method="POST" action="{{ url_for('add_kecelakaan') }}" class="mt-2 space-y-4">
+                <div>
+                    <label for="add_kec_gampong_id" class="block text-sm font-medium text-gray-700 text-left">Gampong</label>
+                    <select name="gampong_id" id="add_kec_gampong_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        {% for g in all_gampongs %}<option value="{{ g.id }}">{{ g.nama_gampong }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="add_jumlah_kecelakaan" class="block text-sm font-medium text-gray-700 text-left">Jumlah Kecelakaan</label>
+                    <input type="number" name="jumlah_kecelakaan" id="add_jumlah_kecelakaan" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="add_kec_tahun" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
+                    <input type="number" name="tahun" id="add_kec_tahun" required min="2000" max="2099" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md w-full hover:bg-blue-700">Simpan</button>
+                    <button type="button" onclick="closeModal('addKecelakaanModal')" class="mt-2 px-4 py-2 bg-gray-300 text-gray-800 rounded-md w-full hover:bg-gray-400">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Edit Kecelakaan Modal -->
+    <div id="editKecelakaanModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 text-center">Edit Data Kecelakaan</h3>
+            <form method="POST" id="editKecelakaanForm" class="mt-2 space-y-4">
+                <input type="hidden" name="id" id="edit_kec_id_field">
+                <div>
+                    <label for="edit_kec_gampong_id_field" class="block text-sm font-medium text-gray-700 text-left">Gampong</label>
+                    <select name="gampong_id" id="edit_kec_gampong_id_field" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        {% for g in all_gampongs %}<option value="{{ g.id }}">{{ g.nama_gampong }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="edit_jumlah_kecelakaan_field" class="block text-sm font-medium text-gray-700 text-left">Jumlah Kecelakaan</label>
+                    <input type="number" name="jumlah_kecelakaan" id="edit_jumlah_kecelakaan_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="edit_kec_tahun_field" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
+                    <input type="number" name="tahun" id="edit_kec_tahun_field" required min="2000" max="2099" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-md w-full hover:bg-yellow-700">Update</button>
+                    <button type="button" onclick="closeModal('editKecelakaanModal')" class="mt-2 px-4 py-2 bg-gray-300 text-gray-800 rounded-md w-full hover:bg-gray-400">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Korban Modal -->
+    <div id="addKorbanModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 text-center">Tambah Data Korban</h3>
+            <form method="POST" action="{{ url_for('add_korban') }}" class="mt-2 space-y-4">
+                <div>
+                    <label for="add_korban_gampong_id" class="block text-sm font-medium text-gray-700 text-left">Gampong</label>
+                    <select name="gampong_id" id="add_korban_gampong_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        {% for g in all_gampongs %}<option value="{{ g.id }}">{{ g.nama_gampong }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="add_jumlah_meninggal" class="block text-sm font-medium text-gray-700 text-left">Jumlah Meninggal</label>
+                    <input type="number" name="jumlah_meninggal" id="add_jumlah_meninggal" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="add_jumlah_luka_berat" class="block text-sm font-medium text-gray-700 text-left">Jumlah Luka Berat</label>
+                    <input type="number" name="jumlah_luka_berat" id="add_jumlah_luka_berat" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="add_jumlah_luka_ringan" class="block text-sm font-medium text-gray-700 text-left">Jumlah Luka Ringan</label>
+                    <input type="number" name="jumlah_luka_ringan" id="add_jumlah_luka_ringan" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="add_korban_tahun" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
+                    <input type="number" name="tahun" id="add_korban_tahun" required min="2000" max="2099" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md w-full hover:bg-blue-700">Simpan</button>
+                    <button type="button" onclick="closeModal('addKorbanModal')" class="mt-2 px-4 py-2 bg-gray-300 text-gray-800 rounded-md w-full hover:bg-gray-400">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Korban Modal -->
+    <div id="editKorbanModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 text-center">Edit Data Korban</h3>
+            <form method="POST" id="editKorbanForm" class="mt-2 space-y-4">
+                <input type="hidden" name="id" id="edit_korban_id_field">
+                <div>
+                    <label for="edit_korban_gampong_id_field" class="block text-sm font-medium text-gray-700 text-left">Gampong</label>
+                    <select name="gampong_id" id="edit_korban_gampong_id_field" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        {% for g in all_gampongs %}<option value="{{ g.id }}">{{ g.nama_gampong }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="edit_jumlah_meninggal_field" class="block text-sm font-medium text-gray-700 text-left">Jumlah Meninggal</label>
+                    <input type="number" name="jumlah_meninggal" id="edit_jumlah_meninggal_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="edit_jumlah_luka_berat_field" class="block text-sm font-medium text-gray-700 text-left">Jumlah Luka Berat</label>
+                    <input type="number" name="jumlah_luka_berat" id="edit_jumlah_luka_berat_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="edit_jumlah_luka_ringan_field" class="block text-sm font-medium text-gray-700 text-left">Jumlah Luka Ringan</label>
+                    <input type="number" name="jumlah_luka_ringan" id="edit_jumlah_luka_ringan_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="edit_korban_tahun_field" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
+                    <input type="number" name="tahun" id="edit_korban_tahun_field" required min="2000" max="2099" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button type="submit" class="px-4 py-2 bg-yellow-500 text-white rounded-md w-full hover:bg-yellow-700">Update</button>
+                    <button type="button" onclick="closeModal('editKorbanModal')" class="mt-2 px-4 py-2 bg-gray-300 text-gray-800 rounded-md w-full hover:bg-gray-400">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = 'block';
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function openEditModal(modalId, id, nama_gampong) {
+        document.getElementById('edit_gampong_id_field').value = id;
+        document.getElementById('edit_nama_gampong_field').value = nama_gampong;
+        document.getElementById('editGampongForm').action = `/data/gampong/edit/${id}`;
+        openModal(modalId);
+    }
+
+    function openEditKecelakaanModal(id, gampong_id, jumlah, tahun) {
+        document.getElementById('edit_kec_id_field').value = id;
+        document.getElementById('edit_kec_gampong_id_field').value = gampong_id;
+        document.getElementById('edit_jumlah_kecelakaan_field').value = jumlah;
+        document.getElementById('edit_kec_tahun_field').value = tahun;
+        document.getElementById('editKecelakaanForm').action = `/data/kecelakaan/edit/${id}`;
+        openModal('editKecelakaanModal');
+    }
+    
+    function openEditKorbanModal(id, gampong_id, meninggal, lb, lr, tahun) {
+        document.getElementById('edit_korban_id_field').value = id;
+        document.getElementById('edit_korban_gampong_id_field').value = gampong_id;
+        document.getElementById('edit_jumlah_meninggal_field').value = meninggal;
+        document.getElementById('edit_jumlah_luka_berat_field').value = lb;
+        document.getElementById('edit_jumlah_luka_ringan_field').value = lr;
+        document.getElementById('edit_korban_tahun_field').value = tahun;
+        document.getElementById('editKorbanForm').action = `/data/korban/edit/${id}`;
+        openModal('editKorbanModal');
+    }
+
+
+    $(document).ready(function() {
+        $('#gampongTable').DataTable({ responsive: true, language: { url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json' }});
+        $('#kecelakaanTable').DataTable({ responsive: true, language: { url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json' }});
+        $('#korbanTable').DataTable({ responsive: true, language: { url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json' }});
+        // TODO: Initialize DataTables for other tables when added
+    });
+</script>
+{% endblock %}

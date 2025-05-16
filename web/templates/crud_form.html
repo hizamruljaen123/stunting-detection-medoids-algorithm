@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5>Manajemen Data Kecelakaan</h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="jenis-tab" data-bs-toggle="tab" data-bs-target="#jenis" type="button" role="tab">
+                            Jenis Kecelakaan
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="usia-tab" data-bs-toggle="tab" data-bs-target="#usia" type="button" role="tab">
+                            Korban Usia
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content p-3 border border-top-0" id="myTabContent">
+                    <!-- Jenis Kecelakaan Form -->
+                    <div class="tab-pane fade show active" id="jenis" role="tabpanel">
+                        <form id="jenisForm" method="POST" action="{{ url_for('save_kecelakaan_jenis') }}">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="kecamatan" class="form-label">Kecamatan</label>
+                                    <select class="form-select" id="kecamatan" name="Kecamatan" required>
+                                        <option value="">Pilih Kecamatan</option>
+                                        {% for kec in kecamatan_list %}
+                                            <option value="{{ kec }}">{{ kec }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="tahun" class="form-label">Tahun</label>
+                                    <input type="number" class="form-control" id="tahun" name="Tahun" min="2010" max="2030" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="tabrakan" class="form-label">Tabrakan</label>
+                                    <input type="number" class="form-control" id="tabrakan" name="Tabrakan" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="terjatuh" class="form-label">Terjatuh</label>
+                                    <input type="number" class="form-control" id="terjatuh" name="Terjatuh" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="tertabrak" class="form-label">Tertabrak</label>
+                                    <input type="number" class="form-control" id="tertabrak" name="Tertabrak" min="0">
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="terbalik" class="form-label">Terbalik</label>
+                                    <input type="number" class="form-control" id="terbalik" name="Terbalik" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="tunggal" class="form-label">Kecelakaan Tunggal</label>
+                                    <input type="number" class="form-control" id="tunggal" name="Kecelakaan_Tunggal" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="beruntun" class="form-label">Kecelakaan Beruntun</label>
+                                    <input type="number" class="form-control" id="beruntun" name="Kecelakaan_Beruntun" min="0">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Simpan Data</button>
+                        </form>
+
+                        <hr class="my-4">
+
+                        <div class="table-responsive">
+                            <table id="jenisTable" class="table table-striped table-bordered" style="width:100%">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Kecamatan</th>
+                                        <th>Tahun</th>
+                                        <th>Tabrakan</th>
+                                        <th>Terjatuh</th>
+                                        <th>Tertabrak</th>
+                                        <th>Terbalik</th>
+                                        <th>Tunggal</th>
+                                        <th>Beruntun</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in jenis_data %}
+                                    <tr>
+                                        <td>{{ item.Kecamatan }}</td>
+                                        <td>{{ item.Tahun }}</td>
+                                        <td>{{ item.Tabrakan }}</td>
+                                        <td>{{ item.Terjatuh }}</td>
+                                        <td>{{ item.Tertabrak }}</td>
+                                        <td>{{ item.Terbalik }}</td>
+                                        <td>{{ item.Kecelakaan_Tunggal }}</td>
+                                        <td>{{ item.Kecelakaan_Beruntun }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning">Edit</button>
+                                            <button class="btn btn-sm btn-danger">Hapus</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Korban Usia Form -->
+                    <div class="tab-pane fade" id="usia" role="tabpanel">
+                        <form id="usiaForm" method="POST" action="{{ url_for('save_kecelakaan_usia') }}">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="usiaKecamatan" class="form-label">Kecamatan</label>
+                                    <select class="form-select" id="usiaKecamatan" name="Kecamatan" required>
+                                        <option value="">Pilih Kecamatan</option>
+                                        {% for kec in kecamatan_list %}
+                                            <option value="{{ kec }}">{{ kec }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="usiaTahun" class="form-label">Tahun</label>
+                                    <input type="number" class="form-control" id="usiaTahun" name="tahun" min="2010" max="2030" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="anak" class="form-label">Anak-anak (<12)</label>
+                                    <input type="number" class="form-control" id="anak" name="anak_anak" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="remaja" class="form-label">Remaja (12-17)</label>
+                                    <input type="number" class="form-control" id="remaja" name="remaja" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="dewasa" class="form-label">Dewasa (18-40)</label>
+                                    <input type="number" class="form-control" id="dewasa" name="dewasa" min="0">
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="paruhbaya" class="form-label">Paruh Baya (41-60)</label>
+                                    <input type="number" class="form-control" id="paruhbaya" name="paruh_baya" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="lansia" class="form-label">Lansia (>60)</label>
+                                    <input type="number" class="form-control" id="lansia" name="lansia" min="0">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Simpan Data</button>
+                        </form>
+
+                        <hr class="my-4">
+
+                        <div class="table-responsive">
+                            <table id="usiaTable" class="table table-striped table-bordered" style="width:100%">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Kecamatan</th>
+                                        <th>Tahun</th>
+                                        <th>Anak-anak</th>
+                                        <th>Remaja</th>
+                                        <th>Dewasa</th>
+                                        <th>Paruh Baya</th>
+                                        <th>Lansia</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in usia_data %}
+                                    <tr>
+                                        <td>{{ item.Kecamatan }}</td>
+                                        <td>{{ item.tahun }}</td>
+                                        <td>{{ item.anak_anak }}</td>
+                                        <td>{{ item.remaja }}</td>
+                                        <td>{{ item.dewasa }}</td>
+                                        <td>{{ item.paruh_baya }}</td>
+                                        <td>{{ item.lansia }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning">Edit</button>
+                                            <button class="btn btn-sm btn-danger">Hapus</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize DataTables
+    $('#jenisTable').DataTable();
+    $('#usiaTable').DataTable();
+
+    // Form submission handling
+    $('#jenisForm').on('submit', function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('Error: ' + xhr.responseJSON.error);
+            }
+        });
+    });
+
+    $('#usiaForm').on('submit', function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function(response) {
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('Error: ' + xhr.responseJSON.error);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

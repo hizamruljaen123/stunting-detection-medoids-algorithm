@@ -1,0 +1,68 @@
+[
+    {
+        "kecamatan": "Tamiang Hulu",
+        "lat": 97.85185370751563,
+        "lon": 4.15220175
+    },
+    {
+        "kecamatan": "Banda Mulia",
+        "lat": 98.14116764603024,
+        "lon": 4.4422464999999995
+    },
+    {
+        "kecamatan": "Manyak Payed",
+        "lat": 98.07468748403187,
+        "lon": 4.438879
+    },
+    {
+        "kecamatan": "Tenggulun",
+        "lat": 97.9859769,
+        "lon": 3.986316
+    },
+    {
+        "kecamatan": "Sekerak",
+        "lat": 98.0162749,
+        "lon": 4.2807378
+    },
+    {
+        "kecamatan": "Bandar Pusaka",
+        "lat": 97.84363774643285,
+        "lon": 4.2844005
+    },
+    {
+        "kecamatan": "Karang Baru",
+        "lat": 98.0338871258385,
+        "lon": 4.336488
+    },
+    {
+        "kecamatan": "Seruway",
+        "lat": 98.20129065415438,
+        "lon": 4.3524345
+    },
+    {
+        "kecamatan": "Bendahara",
+        "lat": 98.2116961958092,
+        "lon": 4.418093
+    },
+    {
+        "kecamatan": "Kejuruan Muda",
+        "lat": 98.02260565480667,
+        "lon": 4.1943295
+    },
+    {
+        "kecamatan": "Rantau",
+        "lat": 98.09810977892025,
+        "lon": 4.309874000000001
+    },
+    {
+        "kecamatan": "Kuala Simpang",
+        "lat": 98.0608382,
+        "lon": 4.2839266
+    }
+    ,
+    {
+        "kecamatan": "Kota Kualasimpang",
+        "lat": 98.0533437,
+        "lon": 4.2861493
+    }
+]

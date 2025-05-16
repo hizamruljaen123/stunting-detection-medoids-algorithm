@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Detail {{ gampong_nama }} - Dashboard Kecelakaan{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Detail Gampong: {{ gampong_nama }}</h1>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Total Kecelakaan -->
+        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Kecelakaan</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ jenis_values|sum }}</p>
+                </div>
+                <div class="text-gray-400">
+                    <i class="fas fa-car-crash fa-2x"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Korban -->
+        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Korban</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ usia_values|sum }}</p>
+                </div>
+                <div class="text-gray-400">
+                    <i class="fas fa-user-injured fa-2x"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tahun Terakhir -->
+        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-indigo-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Tahun Terakhir</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ tahun_labels[-1] }}</p>
+                </div>
+                <div class="text-gray-400">
+                    <i class="fas fa-calendar-alt fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grafik Tren Tahunan -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Tren Kecelakaan per Tahun</h2>
+        </div>
+        <div id="chartError" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4"></div>
+        <div class="h-96">
+            <canvas id="trenChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Grafik dan Peta -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Grafik Jenis Kecelakaan -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Distribusi Jenis Kecelakaan</h2>
+            </div>
+            <div class="h-80">
+                <canvas id="jenisChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Grafik Korban Usia -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Distribusi Korban Berdasarkan Usia</h2>
+            </div>
+            <div class="h-80">
+                <canvas id="usiaChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Peta Wilayah -->
+    {% if map_html_detail %}
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Peta Lokasi Gampong</h2>
+        </div>
+        <div class="h-96">
+            {{ map_html_detail|safe }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabel Data Kecelakaan -->
+    <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Histori Jumlah Kecelakaan per Tahun</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="kecelakaanHistTable">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Kecelakaan</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in kecelakaan_hist %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.tahun }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.jumlah_kecelakaan }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Tidak ada data histori kecelakaan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tabel Data Korban -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Histori Jumlah Korban per Tahun</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="korbanHistTable">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meninggal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Berat</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Ringan</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Korban</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in korban_hist %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.tahun }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.jumlah_meninggal }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.jumlah_luka_berat }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.jumlah_luka_ringan }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ item.jumlah_meninggal + item.jumlah_luka_berat + item.jumlah_luka_ringan }}</td>
+                    </tr>
+                    {% else %}
+                     <tr>
+                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Tidak ada data histori korban.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Add gampong data to body for detail.js -->
+<body data-gampong="{{ gampong_nama }}">
+
+<!-- Chart containers are already in the template, detail.js will populate them -->
+<script src="{{ url_for('static', filename='js/detail.js') }}"></script>
+{% endblock %}

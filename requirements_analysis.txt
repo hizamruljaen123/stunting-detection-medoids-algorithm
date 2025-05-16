@@ -1,0 +1,50 @@
+Analisis Kebutuhan Sistem:
+
+Sistem ini adalah aplikasi web berbasis Flask yang bertujuan untuk menganalisis dan memvisualisasikan data kecelakaan lalu lintas. Secara umum, sistem ini membutuhkan kemampuan untuk mengelola data kecelakaan, korban, jenis kendaraan, kondisi jalan, dan koordinat wilayah (gampong). Sistem ini juga menyediakan fitur untuk menampilkan data dalam bentuk dashboard, peta interaktif, dan statistik. Analisis klasterisasi K-Medoids digunakan untuk mengidentifikasi wilayah rawan kecelakaan.
+
+Poin-poin Kebutuhan Fitur:
+
+1.  **Dashboard:**
+    *   Menampilkan total jumlah kecelakaan.
+    *   Menampilkan total jumlah korban meninggal.
+    *   Menampilkan jumlah gampong yang dianggap rawan kecelakaan.
+    *   Menampilkan grafik ringkasan kecelakaan per tahun.
+    *   Menampilkan grafik ringkasan jumlah korban (meninggal, luka berat, luka ringan).
+    *   Menampilkan peta klaster wilayah rawan kecelakaan.
+
+2.  **Peta Interaktif:**
+    *   Menampilkan peta wilayah Aceh.
+    *   Menampilkan marker klaster untuk wilayah rawan kecelakaan.
+    *   Memungkinkan filter data berdasarkan tahun dan gampong.
+    *   Menampilkan informasi detail kecelakaan dan korban pada popup marker.
+
+3.  **Statistik Kecelakaan:**
+    *   Menampilkan grafik batang total kecelakaan per gampong (top 15).
+    *   Menampilkan grafik garis total kecelakaan per tahun.
+
+4.  **Statistik Korban:**
+    *   Menampilkan diagram lingkaran distribusi korban (meninggal, luka berat, luka ringan).
+    *   Menampilkan grafik garis total korban per tahun.
+
+5.  **Manajemen Data (CRUD):**
+    *   Memungkinkan penambahan, pengeditan, dan penghapusan data gampong.
+    *   Memungkinkan penambahan, pengeditan, dan penghapusan data kecelakaan.
+    *   Memungkinkan penambahan, pengeditan, dan penghapusan data korban.
+    *   Memungkinkan penambahan, pengeditan, dan penghapusan data jenis kendaraan.
+    *   Memungkinkan penambahan, pengeditan, dan penghapusan data kondisi jalan.
+    *   Memungkinkan penambahan, pengeditan, dan penghapusan data koordinat.
+
+6.  **Detail Gampong:**
+    *   Menampilkan informasi detail tentang suatu gampong.
+    *   Menampilkan riwayat kecelakaan di gampong tersebut.
+    *   Menampilkan riwayat korban di gampong tersebut.
+    *   Menampilkan peta detail gampong.
+    *   Menampilkan grafik histori kecelakaan dan korban di gampong.
+
+7.  **Lain-lain:**
+    *   Penggunaan algoritma K-Medoids untuk klasterisasi wilayah rawan kecelakaan.
+    *   Penggunaan database MySQL untuk penyimpanan data.
+    *   Penggunaan Flask sebagai framework web.
+    *   Penggunaan library pandas dan numpy untuk pengolahan data.
+    *   Penggunaan library folium untuk pembuatan peta.
+    *   Penggunaan library plotly untuk pembuatan grafik.
