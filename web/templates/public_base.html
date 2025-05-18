@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Informasi Kecelakaan Lalu Lintas Kota Lhokseumawe</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#06b6d4',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        success: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" integrity="sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Main Content for Public Pages (without sidebar) -->
+    <div class="min-h-screen">
+        <!-- Top Navigation - Simplified for public -->
+        <header class="bg-white shadow-sm">
+            <div class="container mx-auto px-4">
+                <div class="flex items-center justify-between py-4">
+                    <div class="flex items-center">
+                        <img src="https://via.placeholder.com/40" alt="Logo" class="h-10 w-10 mr-3">
+                        <h1 class="text-xl font-semibold text-gray-800">Sistem Informasi Kecelakaan Lalu Lintas</h1>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('login') }}" class="inline-block py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors">
+                            <i class="fas fa-user-shield mr-2"></i>Admin
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main>
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="container mx-auto px-4 py-3">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} mb-4 p-4 rounded-lg border-l-4 border-{{ category }}-500 bg-{{ category }}-50 text-{{ category }}-700">
+                                {{ message }}
+                                <button type="button" class="float-right focus:outline-none" onclick="this.parentElement.remove()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white shadow-inner mt-16 py-6">
+            <div class="container mx-auto px-4">
+                <div class="text-center text-gray-600 text-sm">
+                    <p>&copy; 2023 Pemerintah Kota Lhokseumawe. Hak Cipta Dilindungi.</p>
+                    <p class="mt-2">Sistem Informasi Data Kecelakaan Lalu Lintas</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Public page specific JavaScript can go here
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

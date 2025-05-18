@@ -8,8 +8,10 @@ from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 import json
+import time
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from sklearn.manifold import TSNE
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here' # tetap sama
@@ -27,104 +29,245 @@ def get_db_connection():
     return conn
 
 # Fungsi K-Medoids (logika inti K-Medoids tidak berubah, hanya data inputnya)
-def k_medoids(data, k=3, max_iter=100):
+def k_medoids(data, k=3, max_iter=100, log_progress=False):
+    """
+    K-Medoids clustering algorithm with detailed logging for simulation visualization.
+    
+    Args:
+        data: numpy array of data points
+        k: number of clusters to form
+        max_iter: maximum number of iterations
+        log_progress: whether to log detailed progress for visualization
+    
+    Returns:
+        medoids: numpy array of medoid data points
+        clusters: list of lists containing indexes of data points in each cluster
+        logs: list of log messages (if log_progress=True)
+        iterations: list of iteration data (if log_progress=True)
+    """
+    logs = []
+    iterations = []
+    
     m, n = data.shape
-    if m == 0: # Handle empty data
+    if m == 0:  # Handle empty data
+        if log_progress:
+            logs.append("Error: Empty data set provided.")
+            return np.array([]), [[] for _ in range(k)], logs, iterations
         return np.array([]), [[] for _ in range(k)]
-    if m < k: # Handle case where data points are less than k
+        
+    if m < k:  # Handle case where data points are less than k
+        if log_progress:
+            logs.append(f"Warning: Number of data points ({m}) is less than k ({k}).")
+            logs.append("Assigning each point to its own cluster and padding with empty clusters if needed.")
+        
         # Assign each point to its own cluster, pad if necessary
         medoid_indices = np.arange(m)
         medoids = data[medoid_indices]
         clusters = [[i] for i in range(m)]
+        
         # Pad clusters and medoids if k > m
         for _ in range(k - m):
             clusters.append([])
-            # Need to decide how to handle medoids if k > m, maybe duplicate last or use placeholder
+        
+        if log_progress:
+            iter_data = {
+                "medoids": [{"original_index": idx, "cluster": i} for i, idx in enumerate(medoid_indices)],
+                "clusters": clusters,
+                "total_cost": 0
+            }
+            iterations.append(iter_data)
+            return medoids, clusters, logs, iterations
+            
         return medoids, clusters
 
-
+    # Initialize medoids randomly
     medoid_indices = np.random.choice(m, k, replace=False)
     medoids = data[medoid_indices]
     
-    for _ in range(max_iter):
+    if log_progress:
+        logs.append(f"Initialized {k} random medoids with indices: {medoid_indices.tolist()}")
+    
+    total_cost = 0
+    
+    for iter_num in range(max_iter):
+        if log_progress:
+            logs.append(f"Iteration {iter_num + 1}/{max_iter}")
+        
+        # Assign points to clusters
         clusters = [[] for _ in range(k)]
+        current_cost = 0
+        
         for i, point in enumerate(data):
             distances = [np.linalg.norm(point - medoid) for medoid in medoids]
-            if not distances: continue # Should not happen if medoids exist
+            if not distances:
+                if log_progress:
+                    logs.append(f"Warning: No valid distances calculated for point {i}.")
+                continue
+                
             cluster_index = np.argmin(distances)
             clusters[cluster_index].append(i)
+            current_cost += min(distances)
         
+        if log_progress:
+            logs.append(f"Assigned {m} points to {k} clusters with distribution: {[len(c) for c in clusters]}")
+            logs.append(f"Current total cost: {current_cost:.4f}")
+            
+        # Select new medoids
         new_medoid_indices = []
-        current_medoids_valid = True
+        
         for i, cluster_indices_list in enumerate(clusters):
-            if not cluster_indices_list: # Empty cluster
-                # Keep old medoid if cluster is empty, or re-initialize if too many are empty
+            if not cluster_indices_list:  # Empty cluster
+                if log_progress:
+                    logs.append(f"Warning: Cluster {i} is empty. Keeping previous medoid.")
                 new_medoid_indices.append(medoid_indices[i])
                 continue
             
             cluster_points_arr = data[cluster_indices_list]
+            
             # Calculate cost for each point in the cluster to be the medoid
-            costs = [np.sum(np.linalg.norm(p - other_p) for other_p in cluster_points_arr) for p in cluster_points_arr]
-            if not costs: # Should not happen if cluster_points_arr is not empty
-                new_medoid_indices.append(medoid_indices[i]) # Fallback
+            costs = []
+            for idx, p in enumerate(cluster_points_arr):
+                cost = sum(np.linalg.norm(p - other_p) for other_p in cluster_points_arr)
+                costs.append(cost)
+                
+            if not costs:  # Should not happen if cluster_points_arr is not empty
+                if log_progress:
+                    logs.append(f"Warning: Failed to calculate costs for cluster {i}. Using fallback.")
+                new_medoid_indices.append(medoid_indices[i])
                 continue
 
             new_medoid_local_idx = np.argmin(costs)
             new_medoid_global_idx = cluster_indices_list[new_medoid_local_idx]
             new_medoid_indices.append(new_medoid_global_idx)
+            
+            if log_progress:
+                logs.append(f"Selected new medoid for cluster {i}: point {new_medoid_global_idx} with cost {min(costs):.4f}")
 
         if not new_medoid_indices or len(new_medoid_indices) != k:
-             # Fallback if something went wrong, e.g. all clusters became empty
-             medoid_indices = np.random.choice(m, k, replace=False) # Re-initialize
-             medoids = data[medoid_indices]
-             continue
+            # Fallback if something went wrong, e.g. all clusters became empty
+            if log_progress:
+                logs.append("Error: Invalid medoid selection. Re-initializing medoids.")
+            medoid_indices = np.random.choice(m, k, replace=False)
+            medoids = data[medoid_indices]
+            continue
 
+        # Store current iteration data for visualization
+        if log_progress:
+            iter_data = {
+                "medoids": [{"original_index": idx, "cluster": i} for i, idx in enumerate(new_medoid_indices)],
+                "clusters": [c.copy() for c in clusters],
+                "total_cost": current_cost
+            }
+            iterations.append(iter_data)
+            
+        # Check convergence
         if set(medoid_indices) == set(new_medoid_indices):
+            if log_progress:
+                logs.append(f"Converged after {iter_num + 1} iterations.")
             break
             
         medoid_indices = new_medoid_indices
         medoids = data[medoid_indices]
+        total_cost = current_cost
+    
+    if log_progress:
+        logs.append(f"Final total cost: {total_cost:.4f}")
+        return medoids, clusters, logs, iterations
             
     return medoids, clusters
 
 # Fungsi untuk memproses data dan menjalankan K-medoids dengan data baru
-def process_data_for_k_medoids(df_combined, k=3):
-    # Kolom yang akan digunakan untuk clustering dari skema baru
-    # Ini adalah contoh, bisa disesuaikan
-    columns_to_use = [
-        'jumlah_kecelakaan', 'jumlah_meninggal', 'jumlah_luka_berat', 'jumlah_luka_ringan',
-        'kendaraan_roda_dua', 'kendaraan_roda_4', # 'kendaraan_lebih_roda_4', 'kendaraan_lainnya',
-        'jalan_berlubang', 'jalan_jalur_dua', 'jalan_tikungan', 'jalanan_sempit'
-    ]
+def process_data_for_k_medoids(df_combined, k=3, max_iter=100, columns_to_use=None, log_progress=False):
+    """
+    Process data and run K-Medoids clustering algorithm.
     
-    # Pastikan semua kolom ada dan isi NaN dengan 0 atau rata-rata
+    Args:
+        df_combined: DataFrame containing the data
+        k: number of clusters to form
+        max_iter: maximum number of iterations
+        columns_to_use: specific columns to use for clustering (if None, defaults will be used)
+        log_progress: whether to log detailed progress for visualization
+        
+    Returns:
+        df_combined: DataFrame with cluster assignments
+        medoids: numpy array of medoid data points
+        logs: list of log messages (if log_progress=True)
+        iterations: list of iteration data (if log_progress=True)
+    """
+    # Default columns for clustering
+    if columns_to_use is None:
+        columns_to_use = [
+            'jumlah_kecelakaan', 'jumlah_meninggal', 'jumlah_luka_berat', 'jumlah_luka_ringan',
+            'kendaraan_roda_dua', 'kendaraan_roda_4', # 'kendaraan_lebih_roda_4', 'kendaraan_lainnya',
+            'jalan_berlubang', 'jalan_jalur_dua', 'jalan_tikungan', 'jalanan_sempit'
+        ]
+    
+    # Ensure all requested columns exist and fill NaN
     for col in columns_to_use:
         if col not in df_combined.columns:
-            df_combined[col] = 0 # Atau metode imputasi lain
+            df_combined[col] = 0  # Or use an alternative imputation method
     df_combined[columns_to_use] = df_combined[columns_to_use].fillna(0)
 
     if df_combined.empty or df_combined[columns_to_use].empty:
         df_combined['cluster'] = 0
+        if log_progress:
+            return df_combined, np.array([]), [], []
         return df_combined, np.array([])
 
     data_for_clustering = df_combined[columns_to_use].values
     
-    # Normalisasi data (Min-Max Scaling)
+    # Normalize data (Min-Max Scaling)
     min_vals = np.min(data_for_clustering, axis=0)
     max_vals = np.max(data_for_clustering, axis=0)
     range_vals = max_vals - min_vals
     
-    # Hindari pembagian dengan nol jika semua nilai dalam kolom sama
+    # Avoid division by zero if all values in a column are the same
     range_vals[range_vals == 0] = 1 
     data_normalized = (data_for_clustering - min_vals) / range_vals
     
-    medoids, clusters = k_medoids(data_normalized, k)
+    # Run K-Medoids clustering
+    if log_progress:
+        medoids, clusters, logs, iterations = k_medoids(data_normalized, k, max_iter, log_progress=True)
+    else:
+        medoids, clusters = k_medoids(data_normalized, k, max_iter)
     
-    df_combined['cluster'] = 0 # Default cluster
+    # Assign clusters to data points
+    df_combined['cluster'] = 0  # Default cluster
     for i, cluster_indices_list in enumerate(clusters):
         for point_idx in cluster_indices_list:
             df_combined.iloc[point_idx, df_combined.columns.get_loc('cluster')] = i
     
+    if log_progress:
+        # Calculate feature importance for each cluster
+        feature_importance = []
+        for i in range(k):
+            cluster_data = df_combined[df_combined['cluster'] == i]
+            if not cluster_data.empty:
+                cluster_features = []
+                for col in columns_to_use:
+                    cluster_features.append({
+                        'name': col,
+                        'value': cluster_data[col].mean()
+                    })
+                
+                feature_importance.append({
+                    'cluster': i,
+                    'features': cluster_features
+                })
+        
+        # Convert normalized medoids back to original scale
+        original_medoids = medoids * range_vals + min_vals
+        
+        # Add normalized data to iterations for visualization
+        for iter_data in iterations:
+            for medoid in iter_data['medoids']:
+                idx = medoid['original_index']
+                medoid['normalized_values'] = data_normalized[idx].tolist()
+                medoid['original_values'] = data_for_clustering[idx].tolist()
+                medoid['feature_names'] = columns_to_use
+                
+        return df_combined, medoids, logs, iterations, feature_importance
+        
     return df_combined, medoids
 
 # Fungsi untuk klasifikasi tingkat keparahan (bisa disesuaikan)
@@ -919,6 +1062,300 @@ def detail_gampong(nama_gampong):
                            chart_kecelakaan_hist=chart_kecelakaan_hist,
                            chart_korban_hist=chart_korban_hist
                            )
+
+# Login Page
+@app.route('/login')
+def login():
+    """
+    Render the login page with a dummy button to access the admin dashboard
+    """
+    return render_template('login.html')
+
+# Public Dashboard Page
+@app.route('/public')
+def public_dashboard():
+    """
+    Public dashboard for citizens to view general data and graphs
+    """
+    try:
+        # Get year filter from query parameters
+        selected_year = request.args.get('year', 'all')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get list of years for filter dropdown
+        cursor.execute("SELECT DISTINCT tahun FROM kecelakaan ORDER BY tahun DESC")
+        years = [row['tahun'] for row in cursor.fetchall()]
+        
+        # Build base query for accident data filtering
+        year_filter = ""
+        params = []
+        if selected_year and selected_year != 'all':
+            year_filter = " WHERE tahun = %s"
+            params.append(selected_year)
+        
+        # Get accident summary data
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_accidents,
+                SUM(jumlah_kecelakaan) as total_count
+            FROM kecelakaan
+        """ + year_filter, params)
+        accident_summary = cursor.fetchone()
+        
+        # Get victim summary data
+        cursor.execute("""
+            SELECT 
+                SUM(jumlah_meninggal) as total_deaths,
+                SUM(jumlah_luka_berat) as total_serious_injuries,
+                SUM(jumlah_luka_ringan) as total_minor_injuries
+            FROM korban
+        """ + year_filter, params)
+        victim_summary = cursor.fetchone()
+        
+        # Combine summary data
+        summary = {
+            'total_accidents': accident_summary['total_count'] if accident_summary else 0,
+            'total_deaths': victim_summary['total_deaths'] if victim_summary else 0,
+            'total_serious_injuries': victim_summary['total_serious_injuries'] if victim_summary else 0,
+            'total_minor_injuries': victim_summary['total_minor_injuries'] if victim_summary else 0
+        }
+        
+        # Get accidents by year
+        cursor.execute("""
+            SELECT 
+                tahun, 
+                SUM(jumlah_kecelakaan) as total
+            FROM kecelakaan
+            GROUP BY tahun
+            ORDER BY tahun
+        """)
+        accidents_by_year = cursor.fetchall()
+        
+        # Get victims by year
+        cursor.execute("""
+            SELECT 
+                tahun,
+                SUM(jumlah_meninggal) as deaths,
+                SUM(jumlah_luka_berat) as serious,
+                SUM(jumlah_luka_ringan) as minor
+            FROM korban
+            GROUP BY tahun
+            ORDER BY tahun
+        """)
+        victims_by_year = cursor.fetchall()
+        
+        # Get vehicle types
+        cursor.execute("""
+            SELECT 
+                SUM(kendaraan_roda_dua) as roda_dua,
+                SUM(kendaraan_roda_4) as roda_empat,
+                SUM(kendaraan_lebih_roda_4) as lebih_roda_empat,
+                SUM(kendaraan_lainnya) as lainnya
+            FROM jenis_kendaraan
+        """ + year_filter, params)
+        vehicle_types = cursor.fetchone()
+        
+        # Get high risk areas
+        cursor.execute("""
+            SELECT 
+                g.nama_gampong,
+                SUM(k.jumlah_kecelakaan) as accidents,
+                SUM(korban.jumlah_meninggal) as deaths,
+                SUM(korban.jumlah_luka_berat) as serious,
+                SUM(korban.jumlah_luka_ringan) as minor
+            FROM gampong g
+            JOIN kecelakaan k ON g.id = k.gampong_id
+            JOIN korban ON g.id = korban.gampong_id AND k.tahun = korban.tahun
+        """ + year_filter + """
+            GROUP BY g.id, g.nama_gampong
+            ORDER BY accidents DESC
+            LIMIT 5
+        """, params)
+        high_risk_areas = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('public_dashboard.html',
+                              years=years,
+                              summary=summary,
+                              accidents_by_year=accidents_by_year,
+                              victims_by_year=victims_by_year,
+                              vehicle_types=vehicle_types,
+                              high_risk_areas=high_risk_areas)
+                              
+    except Exception as e:
+        app.logger.error(f"Error in public dashboard: {e}")
+        return render_template('public_dashboard.html', 
+                              error=str(e),
+                              years=[],
+                              summary={},
+                              accidents_by_year=[],
+                              victims_by_year=[],
+                              vehicle_types={},
+                              high_risk_areas=[])
+
+# K-Medoids Simulation Page
+@app.route('/kmedoids')
+def kmedoids_page():
+    """
+    Render the K-Medoids simulation page with proper error handling
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Ambil daftar tahun untuk dropdown filter
+        cursor.execute("SELECT DISTINCT tahun FROM kecelakaan ORDER BY tahun DESC")
+        tahun_list = [row['tahun'] for row in cursor.fetchall()]
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('kmedoids.html', tahun_list=tahun_list)
+    except Exception as e:
+        app.logger.error(f"Error loading K-Medoids page: {e}")
+        # Include error message and hide_sections flag to prevent JavaScript errors
+        return render_template('kmedoids.html', 
+                              tahun_list=[], 
+                              error=str(e), 
+                              hide_sections=True)
+
+# API untuk simulasi K-Medoids dengan detail proses
+@app.route('/api/kmedoids_simulation', methods=['POST'])
+def kmedoids_simulation_api():
+    try:
+        # Parse request parameters
+        data = request.json
+        k = int(data.get('k', 3))
+        max_iter = int(data.get('max_iter', 100))
+        year_filter = data.get('year', 'all')
+        selected_features = data.get('features', [])
+        
+        # Validate parameters
+        if k < 2:
+            return jsonify({'error': 'Number of clusters (k) must be at least 2'}), 400
+        if max_iter < 10:
+            return jsonify({'error': 'Maximum iterations must be at least 10'}), 400
+        if not selected_features or len(selected_features) < 2:
+            return jsonify({'error': 'At least 2 features must be selected'}), 400
+            
+        # Fetch data from database with optimized query
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        query = """
+            SELECT DISTINCT
+                g.id as gampong_id,
+                g.nama_gampong,
+                kec.tahun,
+                COALESCE(kec.jumlah_kecelakaan, 0) as jumlah_kecelakaan,
+                COALESCE(ko.jumlah_meninggal, 0) as jumlah_meninggal,
+                COALESCE(ko.jumlah_luka_berat, 0) as jumlah_luka_berat,
+                COALESCE(ko.jumlah_luka_ringan, 0) as jumlah_luka_ringan,
+                COALESCE(jk.kendaraan_roda_dua, 0) as kendaraan_roda_dua,
+                COALESCE(jk.kendaraan_roda_4, 0) as kendaraan_roda_4,
+                COALESCE(jk.kendaraan_lebih_roda_4, 0) as kendaraan_lebih_roda_4,
+                COALESCE(jk.kendaraan_lainnya, 0) as kendaraan_lainnya,
+                COALESCE(kjp.jalan_berlubang, 0) as jalan_berlubang,
+                COALESCE(kjp.jalan_jalur_dua, 0) as jalan_jalur_dua,
+                COALESCE(kjp.jalan_tikungan, 0) as jalan_tikungan,
+                COALESCE(kjp.jalanan_sempit, 0) as jalanan_sempit,
+                koord.latitude,
+                koord.longitude
+            FROM gampong g
+            LEFT JOIN kecelakaan kec ON g.id = kec.gampong_id
+            LEFT JOIN korban ko ON g.id = ko.gampong_id AND kec.tahun = ko.tahun
+            LEFT JOIN jenis_kendaraan jk ON g.id = jk.gampong_id AND kec.tahun = jk.tahun
+            LEFT JOIN kondisi_jalan kjp ON g.id = kjp.gampong_id AND kec.tahun = kjp.tahun
+            LEFT JOIN koordinat koord ON g.id = koord.gampong_id
+            WHERE kec.jumlah_kecelakaan IS NOT NULL
+        """
+        
+        params = []
+        if year_filter and year_filter != 'all':
+            query += " AND kec.tahun = %s"
+            params.append(year_filter)
+            
+        cursor.execute(query, tuple(params))
+        raw_data = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        if not raw_data:
+            return jsonify({'error': 'No data found for the selected filters'}), 404
+            
+        # Create DataFrame from data
+        df = pd.DataFrame(raw_data)
+        
+        # Ensure selected features exist in DataFrame
+        for feature in selected_features:
+            if feature not in df.columns:
+                df[feature] = 0
+                
+        # Run K-Medoids with detailed logging
+        start_time = time.time()
+        df_clustered, medoids, logs, iterations, feature_importance = process_data_for_k_medoids(
+            df.copy(), 
+            k=k, 
+            max_iter=max_iter, 
+            columns_to_use=selected_features, 
+            log_progress=True
+        )
+        execution_time = time.time() - start_time
+        
+        # Generate t-SNE visualization if data is large enough
+        tsne_results = []
+        if len(df) >= 5:  # Need at least 5 points for meaningful t-SNE
+            try:
+                # Only use selected features for t-SNE
+                tsne_data = df[selected_features].values
+                
+                # Normalize data
+                min_vals = np.min(tsne_data, axis=0)
+                max_vals = np.max(tsne_data, axis=0)
+                range_vals = max_vals - min_vals
+                range_vals[range_vals == 0] = 1
+                tsne_data_norm = (tsne_data - min_vals) / range_vals
+                
+                # Apply t-SNE
+                tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(df) - 1))
+                tsne_result = tsne.fit_transform(tsne_data_norm)
+                
+                # Create result for visualization
+                for i, (x, y) in enumerate(tsne_result):
+                    cluster = df_clustered.iloc[i]['cluster']
+                    tsne_results.append({
+                        'index': i,
+                        'x': float(x),
+                        'y': float(y),
+                        'cluster': int(cluster),
+                        'label': df.iloc[i]['nama_gampong']
+                    })
+            except Exception as e:
+                app.logger.error(f"Error generating t-SNE: {e}")
+        
+        # Prepare result
+        result = {
+            'input_data': df.to_dict('records'),
+            'results': {
+                'k': k,
+                'num_data_points': len(df),
+                'execution_time': execution_time,
+                'iterations': iterations,
+                'logs': logs,
+                'feature_importance': feature_importance,
+                'tsne': tsne_results
+            }
+        }
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        app.logger.error(f"Error in K-Medoids simulation: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -39,6 +39,44 @@
     transition: transform 0.3s ease;
 }
 
+/* Map Marker Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+}
+
+.pulse-marker {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    position: relative;
+    animation: pulse 2s infinite;
+    transform-origin: center;
+}
+
+.pulse-marker::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    animation: pulse 2s infinite 0.3s;
+}
+
 /* Loading Overlay */
 .loading-overlay {
     position: fixed;
@@ -148,4 +186,96 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Additional map and cluster card styling */
+.map-card {
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.map-card:hover {
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.custom-popup .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
+}
+
+.custom-popup .leaflet-popup-tip {
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.2);
+}
+
+.cluster-card {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.cluster-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced cluster markers */
+.animated-marker {
+    position: relative;
+}
+
+.animated-marker::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    border: 2px solid;
+    animation: ripple 1.5s linear infinite;
+    opacity: 0;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(1);
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+/* Year filter badge styling */
+.year-filter-badge {
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.year-filter-badge::before {
+    content: '•';
+    color: white;
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Improved legend styling */
+.legend-box {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.legend-box:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
