@@ -46,26 +46,26 @@ INSERT INTO kecelakaan (gampong_id, jumlah_kecelakaan, tahun) VALUES (20, 3, 202
 
 
 -- Dummy data for Korban
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (1, 4, 3, 9, 2021);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (2, 5, 10, 18, 2021);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (3, 4, 7, 5, 2023);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (4, 1, 7, 10, 2020);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (5, 2, 3, 6, 2022);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (6, 5, 8, 6, 2020);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (7, 4, 4, 12, 2021);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (8, 1, 8, 5, 2024);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (9, 0, 7, 12, 2023);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (10, 1, 9, 5, 2023);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (11, 3, 1, 17, 2024);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (12, 1, 8, 8, 2021);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (13, 1, 9, 19, 2022);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (14, 2, 4, 7, 2022);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (15, 3, 9, 9, 2020);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (16, 5, 5, 14, 2020);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (17, 5, 3, 11, 2021);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (18, 0, 1, 17, 2020);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (19, 1, 1, 10, 2020);
-INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) VALUES (20, 3, 7, 11, 2024);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (1, 4, 2021);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (2, 5, 2021);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (3, 4, 2023);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (4, 1, 2020);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (5, 2, 2022);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (6, 5, 2020);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (7, 4, 2021);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (8, 1, 2024);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (9, 0, 2023);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (10, 1, 2023);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (11, 3, 2024);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (12, 1, 2021);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (13, 1, 2022);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (14, 2, 2022);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (15, 3, 2020);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (16, 5, 2020);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (17, 5, 2021);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (18, 0, 2020);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (19, 1, 2020);
+INSERT INTO korban (gampong_id, jumlah_meninggal, tahun) VALUES (20, 3, 2024);
 
 
 -- Dummy data for Jenis Kendaraan

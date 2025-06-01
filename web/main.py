@@ -197,8 +197,8 @@ def process_data_for_k_medoids(df_combined, k=3, max_iter=100, columns_to_use=No
     # Default columns for clustering
     if columns_to_use is None:
         columns_to_use = [
-            'jumlah_kecelakaan', 'jumlah_meninggal', 'jumlah_luka_berat', 'jumlah_luka_ringan',
-            'kendaraan_roda_dua', 'kendaraan_roda_4', # 'kendaraan_lebih_roda_4', 'kendaraan_lainnya',
+            'jumlah_kecelakaan', 'jumlah_meninggal',
+            'kendaraan_roda_dua', 'kendaraan_roda_4', 'kendaraan_lebih_roda_4', 'kendaraan_lainnya',
             'jalan_berlubang', 'jalan_jalur_dua', 'jalan_tikungan', 'jalanan_sempit'
         ]
     
@@ -338,7 +338,7 @@ def create_cluster_map_new(df_clustered):
             
             # Hitung total kasus untuk popup dan radius (contoh)
             total_kasus = row.get('jumlah_kecelakaan', 0)
-            total_korban = row.get('jumlah_meninggal', 0) + row.get('jumlah_luka_berat', 0) + row.get('jumlah_luka_ringan', 0)
+            total_korban = row.get('jumlah_meninggal', 0)
             combined_total = total_kasus + total_korban
             severity_status = classify_severity(combined_total)
 
@@ -351,7 +351,7 @@ def create_cluster_map_new(df_clustered):
                     <b>Klaster:</b> {cluster_id}<br>
                     <b>Tingkat Keparahan:</b> <span style="color:{'red' if severity_status == 'Awas' else 'orange' if severity_status == 'Siaga' else 'blue'}">{severity_status}</span><br>
                     <b>Total Kasus Kecelakaan:</b> {total_kasus}<br>
-                    <b>Total Korban:</b> {total_korban} (M: {row.get('jumlah_meninggal',0)}, LB: {row.get('jumlah_luka_berat',0)}, LR: {row.get('jumlah_luka_ringan',0)})
+                    <b>Total Korban Meninggal:</b> {total_korban}
                 </p>
                 <h5 style="margin:10px 0 5px 0;">Detail Kendaraan Terlibat</h5>
                 <ul style="margin:0;padding-left:15px;font-size:0.9em;">
@@ -393,10 +393,10 @@ def get_combined_data(tahun_filter=None, gampong_filter=None):
     cursor = conn.cursor(dictionary=True)
     
     query = """
-        SELECT 
+        SELECT
             g.id as gampong_id, g.nama_gampong,
             kec.tahun, kec.jumlah_kecelakaan,
-            ko.jumlah_meninggal, ko.jumlah_luka_berat, ko.jumlah_luka_ringan,
+            ko.jumlah_meninggal,
             jk.kendaraan_roda_dua, jk.kendaraan_roda_4, jk.kendaraan_lebih_roda_4, jk.kendaraan_lainnya,
             kjp.jalan_berlubang, kjp.jalan_jalur_dua, kjp.jalan_tikungan, kjp.jalanan_sempit,
             koord.latitude, koord.longitude
@@ -428,7 +428,7 @@ def get_combined_data(tahun_filter=None, gampong_filter=None):
     
     df = pd.DataFrame(data)
     # Fill NaN values that might result from LEFT JOINs, especially for features used in clustering
-    numeric_cols = ['jumlah_kecelakaan', 'jumlah_meninggal', 'jumlah_luka_berat', 'jumlah_luka_ringan',
+    numeric_cols = ['jumlah_kecelakaan', 'jumlah_meninggal',
                     'kendaraan_roda_dua', 'kendaraan_roda_4', 'kendaraan_lebih_roda_4', 'kendaraan_lainnya',
                     'jalan_berlubang', 'jalan_jalur_dua', 'jalan_tikungan', 'jalanan_sempit']
     for col in numeric_cols:
@@ -496,20 +496,16 @@ def dashboard():
         kecelakaan_summary_labels = [str(r['tahun']) for r in kecelakaan_summary_raw]
         kecelakaan_summary_data = [int(r['total_per_tahun']) for r in kecelakaan_summary_raw]
 
-        # Data untuk chart ringkasan korban (misal: total meninggal, luka berat, ringan)
+        # Data untuk chart ringkasan korban (hanya meninggal)
         cursor.execute("""
-            SELECT 
-                SUM(jumlah_meninggal) as total_meninggal,
-                SUM(jumlah_luka_berat) as total_luka_berat,
-                SUM(jumlah_luka_ringan) as total_luka_ringan
+            SELECT
+                SUM(jumlah_meninggal) as total_meninggal
             FROM korban
         """)
         korban_summary_raw = cursor.fetchone()
-        korban_summary_labels = ['Meninggal', 'Luka Berat', 'Luka Ringan']
+        korban_summary_labels = ['Meninggal']
         korban_summary_data = [
-            int(korban_summary_raw['total_meninggal'] or 0),
-            int(korban_summary_raw['total_luka_berat'] or 0),
-            int(korban_summary_raw['total_luka_ringan'] or 0)
+            int(korban_summary_raw['total_meninggal'] or 0)
         ]
         
         # Ambil data gabungan untuk peta klaster di dashboard
@@ -618,27 +614,23 @@ def statistik_korban():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Data korban per jenis (M, LB, LR)
+    # Data korban per jenis (hanya meninggal)
     cursor.execute("""
-        SELECT 
-            SUM(jumlah_meninggal) as total_meninggal,
-            SUM(jumlah_luka_berat) as total_luka_berat,
-            SUM(jumlah_luka_ringan) as total_luka_ringan
+        SELECT
+            SUM(jumlah_meninggal) as total_meninggal
         FROM korban
     """)
     korban_totals_raw = cursor.fetchone()
-    korban_labels = ['Meninggal', 'Luka Berat', 'Luka Ringan']
+    korban_labels = ['Meninggal']
     korban_values = [
-        korban_totals_raw['total_meninggal'] or 0, 
-        korban_totals_raw['total_luka_berat'] or 0, 
-        korban_totals_raw['total_luka_ringan'] or 0
+        korban_totals_raw['total_meninggal'] or 0
     ]
     pie_chart_korban = create_pie_chart_summary(korban_labels, korban_values, "Distribusi Korban")
 
-    # Data korban per tahun (total korban)
+    # Data korban per tahun (hanya meninggal)
     cursor.execute("""
-        SELECT tahun, 
-               SUM(jumlah_meninggal + jumlah_luka_berat + jumlah_luka_ringan) as total_korban
+        SELECT tahun,
+               SUM(jumlah_meninggal) as total_korban
         FROM korban
         GROUP BY tahun
         ORDER BY tahun
@@ -646,7 +638,7 @@ def statistik_korban():
     korban_tahun_data = cursor.fetchall()
     korban_tahun_labels = [str(r['tahun']) for r in korban_tahun_data]
     korban_tahun_values = [r['total_korban'] for r in korban_tahun_data]
-    line_chart_korban_tahun = create_bar_chart_summary(korban_tahun_labels, korban_tahun_values, "Total Korban per Tahun", "Jumlah Korban")
+    line_chart_korban_tahun = create_bar_chart_summary(korban_tahun_labels, korban_tahun_values, "Total Korban Meninggal per Tahun", "Jumlah Korban")
 
     cursor.close()
     conn.close()
@@ -704,15 +696,11 @@ def api_peta_data():
             'cluster': row.get('cluster'),
             'jumlah_kecelakaan': row.get('jumlah_kecelakaan', 0),
             'jumlah_meninggal': row.get('jumlah_meninggal', 0),
-            'jumlah_luka_berat': row.get('jumlah_luka_berat', 0),
-            'jumlah_luka_ringan': row.get('jumlah_luka_ringan', 0),
             # Tambahkan data lain jika perlu untuk popup peta
         }
         gampong_data['status_keparahan'] = classify_severity(
-            gampong_data['jumlah_kecelakaan'] + 
-            gampong_data['jumlah_meninggal'] + 
-            gampong_data['jumlah_luka_berat'] +
-            gampong_data['jumlah_luka_ringan']
+            gampong_data['jumlah_kecelakaan'] +
+            gampong_data['jumlah_meninggal']
         )
         result_list.append(gampong_data)
         
@@ -899,9 +887,9 @@ def get_gampong_statistics(gampong_id):
         
         # Get yearly statistics for korban
         cursor.execute("""
-            SELECT tahun, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan 
-            FROM korban 
-            WHERE gampong_id = %s 
+            SELECT tahun, jumlah_meninggal
+            FROM korban
+            WHERE gampong_id = %s
             ORDER BY tahun ASC
         """, (gampong_id,))
         korban_data = cursor.fetchall()
@@ -926,7 +914,7 @@ def get_gampong_statistics(gampong_id):
         
         # Calculate summary statistics
         total_kecelakaan = sum([item['jumlah_kecelakaan'] for item in kecelakaan_data])
-        total_korban = sum([item['jumlah_meninggal'] + item['jumlah_luka_berat'] + item['jumlah_luka_ringan'] for item in korban_data])
+        total_korban = sum([item['jumlah_meninggal'] for item in korban_data])
         total_meninggal = sum([item['jumlah_meninggal'] for item in korban_data])
         
         # Get coordinate data
@@ -1039,15 +1027,13 @@ def add_korban():
         try:
             gampong_id = request.form['gampong_id']
             jumlah_meninggal = request.form['jumlah_meninggal']
-            jumlah_luka_berat = request.form['jumlah_luka_berat']
-            jumlah_luka_ringan = request.form['jumlah_luka_ringan']
             tahun = request.form['tahun']
             
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("""INSERT INTO korban (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun) 
-                              VALUES (%s, %s, %s, %s, %s)""",
-                           (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun))
+            cursor.execute("""INSERT INTO korban (gampong_id, jumlah_meninggal, tahun)
+                              VALUES (%s, %s, %s)""",
+                           (gampong_id, jumlah_meninggal, tahun))
             conn.commit()
             flash('Data Korban berhasil ditambahkan!', 'success')
         except Exception as e:
@@ -1065,15 +1051,12 @@ def edit_korban(id):
         try:
             gampong_id = request.form['gampong_id']
             jumlah_meninggal = request.form['jumlah_meninggal']
-            jumlah_luka_berat = request.form['jumlah_luka_berat']
-            jumlah_luka_ringan = request.form['jumlah_luka_ringan']
             tahun = request.form['tahun']
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("""UPDATE korban SET gampong_id = %s, jumlah_meninggal = %s, jumlah_luka_berat = %s, 
-                              jumlah_luka_ringan = %s, tahun = %s 
-                              WHERE id = %s""", 
-                           (gampong_id, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan, tahun, id))
+            cursor.execute("""UPDATE korban SET gampong_id = %s, jumlah_meninggal = %s, tahun = %s
+                              WHERE id = %s""",
+                           (gampong_id, jumlah_meninggal, tahun, id))
             conn.commit()
             flash('Data Korban berhasil diperbarui!', 'success')
         except Exception as e:
@@ -1348,7 +1331,7 @@ def detail_gampong(nama_gampong):
 
         # Riwayat Korban
         cursor.execute("""
-            SELECT tahun, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan
+            SELECT tahun, jumlah_meninggal
             FROM korban
             WHERE gampong_id = %s ORDER BY tahun DESC
         """, (gampong_id,))
@@ -1467,10 +1450,8 @@ def public_dashboard():
         
         # Get victim summary data
         cursor.execute("""
-            SELECT 
-                SUM(jumlah_meninggal) as total_deaths,
-                SUM(jumlah_luka_berat) as total_serious_injuries,
-                SUM(jumlah_luka_ringan) as total_minor_injuries
+            SELECT
+                SUM(jumlah_meninggal) as total_deaths
             FROM korban
         """ + year_filter, params)
         victim_summary = cursor.fetchone()
@@ -1478,9 +1459,7 @@ def public_dashboard():
         # Combine summary data
         summary = {
             'total_accidents': accident_summary['total_count'] if accident_summary else 0,
-            'total_deaths': victim_summary['total_deaths'] if victim_summary else 0,
-            'total_serious_injuries': victim_summary['total_serious_injuries'] if victim_summary else 0,
-            'total_minor_injuries': victim_summary['total_minor_injuries'] if victim_summary else 0
+            'total_deaths': victim_summary['total_deaths'] if victim_summary else 0
         }
         
         # Get accidents by year
@@ -1496,11 +1475,9 @@ def public_dashboard():
         
         # Get victims by year
         cursor.execute("""
-            SELECT 
+            SELECT
                 tahun,
-                SUM(jumlah_meninggal) as deaths,
-                SUM(jumlah_luka_berat) as serious,
-                SUM(jumlah_luka_ringan) as minor
+                SUM(jumlah_meninggal) as deaths
             FROM korban
             GROUP BY tahun
             ORDER BY tahun
@@ -1523,9 +1500,7 @@ def public_dashboard():
             SELECT 
                 g.nama_gampong,
                 SUM(k.jumlah_kecelakaan) as accidents,
-                SUM(korban.jumlah_meninggal) as deaths,
-                SUM(korban.jumlah_luka_berat) as serious,
-                SUM(korban.jumlah_luka_ringan) as minor
+                SUM(korban.jumlah_meninggal) as deaths
             FROM gampong g
             JOIN kecelakaan k ON g.id = k.gampong_id
             JOIN korban ON g.id = korban.gampong_id AND k.tahun = korban.tahun
@@ -1616,8 +1591,6 @@ def kmedoids_simulation_api():
                 kec.tahun,
                 COALESCE(kec.jumlah_kecelakaan, 0) as jumlah_kecelakaan,
                 COALESCE(ko.jumlah_meninggal, 0) as jumlah_meninggal,
-                COALESCE(ko.jumlah_luka_berat, 0) as jumlah_luka_berat,
-                COALESCE(ko.jumlah_luka_ringan, 0) as jumlah_luka_ringan,
                 COALESCE(jk.kendaraan_roda_dua, 0) as kendaraan_roda_dua,
                 COALESCE(jk.kendaraan_roda_4, 0) as kendaraan_roda_4,
                 COALESCE(jk.kendaraan_lebih_roda_4, 0) as kendaraan_lebih_roda_4,
@@ -1732,8 +1705,6 @@ def kmedoids_simulation_api():
                 conn.close()
         except:
             pass
-
-        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

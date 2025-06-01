@@ -19,8 +19,6 @@ CREATE TABLE korban (
     id INT PRIMARY KEY AUTO_INCREMENT,
     gampong_id INT NOT NULL,
     jumlah_meninggal INT,
-    jumlah_luka_berat INT,
-    jumlah_luka_ringan INT,
     tahun INT,
     FOREIGN KEY (gampong_id) REFERENCES gampong(id) ON DELETE CASCADE
 );
