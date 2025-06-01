@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, render_template, redirect, flash, url_for
+from flask import Flask, jsonify, request, render_template, redirect, flash, url_for, session
 import numpy as np
 import pandas as pd
 import folium
@@ -444,8 +444,25 @@ def get_combined_data(tahun_filter=None, gampong_filter=None):
 
     return df
 
+# Authentication functions
+def login_required(f):
+    """Decorator to require login for admin routes"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session:
+            flash('Silakan login terlebih dahulu untuk mengakses halaman admin.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def check_credentials(username, password):
+    """Check if credentials are valid (both should be 'admin')"""
+    return username == 'admin' and password == 'admin'
+
 # Route untuk dashboard utama
 @app.route('/')
+@login_required
 def dashboard():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -557,6 +574,7 @@ def create_bar_chart_summary(labels, values, title="Tren Tahunan", yaxis_title="
 
 # --- Routes for Visualizations (Adapted) ---
 @app.route('/statistik_kecelakaan')
+@login_required
 def statistik_kecelakaan():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -595,6 +613,7 @@ def statistik_kecelakaan():
                            line_chart_tahun=line_chart_tahun)
 
 @app.route('/statistik_korban')
+@login_required
 def statistik_korban():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -639,6 +658,7 @@ def statistik_korban():
 
 # Route untuk peta interaktif
 @app.route('/peta')
+@login_required
 def peta_interaktif_page():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -659,6 +679,7 @@ def peta_interaktif_page():
 
 # API untuk data peta dengan filter (menggunakan get_combined_data)
 @app.route('/api/peta_data') # URL diubah agar lebih jelas
+@login_required
 def api_peta_data():
     tahun = request.args.get('tahun', 'all')
     gampong_nama = request.args.get('gampong', 'all') # ganti dari kecamatan
@@ -711,6 +732,7 @@ def get_all_gampong_names():
 
 # Route utama untuk manajemen data
 @app.route('/data', methods=['GET'])
+@login_required
 def manage_data_page():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -781,6 +803,7 @@ def manage_data_page():
 # --- CRUD Endpoints untuk setiap tabel ---
 # Gampong CRUD
 @app.route('/data/gampong/add', methods=['POST'])
+@login_required
 def add_gampong():
     if request.method == 'POST':
         try:
@@ -813,6 +836,7 @@ def add_gampong():
     return redirect(url_for('manage_data_page'))
 
 @app.route('/data/gampong/edit/<int:id>', methods=['POST'])
+@login_required
 def edit_gampong(id):
     if request.method == 'POST':
         try:
@@ -831,6 +855,7 @@ def edit_gampong(id):
     return redirect(url_for('manage_data_page'))
 
 @app.route('/data/gampong/delete/<int:id>', methods=['POST'])
+@login_required
 def delete_gampong(id):
     try:
         conn = get_db_connection()
@@ -846,8 +871,97 @@ def delete_gampong(id):
             conn.close()
     return redirect(url_for('manage_data_page'))
 
+@app.route('/api/gampong_statistics/<int:gampong_id>')
+@login_required
+def get_gampong_statistics(gampong_id):
+    """
+    Get comprehensive statistics for a specific Gampong including yearly trends
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get Gampong info
+        cursor.execute("SELECT * FROM gampong WHERE id = %s", (gampong_id,))
+        gampong_info = cursor.fetchone()
+        
+        if not gampong_info:
+            return jsonify({'error': 'Gampong not found'}), 404
+        
+        # Get yearly statistics for kecelakaan
+        cursor.execute("""
+            SELECT tahun, jumlah_kecelakaan 
+            FROM kecelakaan 
+            WHERE gampong_id = %s 
+            ORDER BY tahun ASC
+        """, (gampong_id,))
+        kecelakaan_data = cursor.fetchall()
+        
+        # Get yearly statistics for korban
+        cursor.execute("""
+            SELECT tahun, jumlah_meninggal, jumlah_luka_berat, jumlah_luka_ringan 
+            FROM korban 
+            WHERE gampong_id = %s 
+            ORDER BY tahun ASC
+        """, (gampong_id,))
+        korban_data = cursor.fetchall()
+        
+        # Get yearly statistics for jenis kendaraan
+        cursor.execute("""
+            SELECT tahun, kendaraan_roda_dua, kendaraan_roda_4, kendaraan_lebih_roda_4, kendaraan_lainnya 
+            FROM jenis_kendaraan 
+            WHERE gampong_id = %s 
+            ORDER BY tahun ASC
+        """, (gampong_id,))
+        kendaraan_data = cursor.fetchall()
+        
+        # Get yearly statistics for kondisi jalan
+        cursor.execute("""
+            SELECT tahun, jalan_berlubang, jalan_jalur_dua, jalan_tikungan, jalanan_sempit 
+            FROM kondisi_jalan 
+            WHERE gampong_id = %s 
+            ORDER BY tahun ASC
+        """, (gampong_id,))
+        jalan_data = cursor.fetchall()
+        
+        # Calculate summary statistics
+        total_kecelakaan = sum([item['jumlah_kecelakaan'] for item in kecelakaan_data])
+        total_korban = sum([item['jumlah_meninggal'] + item['jumlah_luka_berat'] + item['jumlah_luka_ringan'] for item in korban_data])
+        total_meninggal = sum([item['jumlah_meninggal'] for item in korban_data])
+        
+        # Get coordinate data
+        cursor.execute("SELECT latitude, longitude FROM koordinat WHERE gampong_id = %s", (gampong_id,))
+        koordinat = cursor.fetchone()
+        
+        statistics = {
+            'gampong_info': gampong_info,
+            'summary': {
+                'total_kecelakaan': total_kecelakaan,
+                'total_korban': total_korban,
+                'total_meninggal': total_meninggal,
+                'years_recorded': len(set([item['tahun'] for item in kecelakaan_data]))
+            },
+            'yearly_data': {
+                'kecelakaan': kecelakaan_data,
+                'korban': korban_data,
+                'kendaraan': kendaraan_data,
+                'jalan': jalan_data
+            },
+            'koordinat': koordinat
+        }
+        
+        return jsonify(statistics)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+
 # Kecelakaan CRUD (Contoh, lainnya serupa)
 @app.route('/data/kecelakaan/add', methods=['POST'])
+@login_required
 def add_kecelakaan():
     if request.method == 'POST':
         try:
@@ -870,6 +984,7 @@ def add_kecelakaan():
     return redirect(url_for('manage_data_page'))
 
 @app.route('/data/kecelakaan/edit/<int:id>', methods=['POST'])
+@login_required
 def edit_kecelakaan(id):
     if request.method == 'POST':
         try:
@@ -892,6 +1007,7 @@ def edit_kecelakaan(id):
 
 
 @app.route('/data/kecelakaan/delete/<int:id>', methods=['POST'])
+@login_required
 def delete_kecelakaan(id):
     try:
         conn = get_db_connection()
@@ -917,6 +1033,7 @@ def delete_kecelakaan(id):
 
 # Korban CRUD
 @app.route('/data/korban/add', methods=['POST'])
+@login_required
 def add_korban():
     if request.method == 'POST':
         try:
@@ -942,6 +1059,7 @@ def add_korban():
     return redirect(url_for('manage_data_page'))
 
 @app.route('/data/korban/edit/<int:id>', methods=['POST'])
+@login_required
 def edit_korban(id):
     if request.method == 'POST':
         try:
@@ -967,6 +1085,7 @@ def edit_korban(id):
     return redirect(url_for('manage_data_page'))
 
 @app.route('/data/korban/delete/<int:id>', methods=['POST'])
+@login_required
 def delete_korban(id):
     try:
         conn = get_db_connection()
@@ -982,9 +1101,224 @@ def delete_korban(id):
             conn.close()
     return redirect(url_for('manage_data_page'))
 
+# Jenis Kendaraan CRUD
+@app.route('/data/jenis_kendaraan/add', methods=['POST'])
+@login_required
+def add_jenis_kendaraan():
+    if request.method == 'POST':
+        try:
+            gampong_id = request.form['gampong_id']
+            kendaraan_roda_dua = request.form['kendaraan_roda_dua']
+            kendaraan_roda_4 = request.form['kendaraan_roda_4']
+            kendaraan_lebih_roda_4 = request.form['kendaraan_lebih_roda_4']
+            kendaraan_lainnya = request.form['kendaraan_lainnya']
+            tahun = request.form['tahun']
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""INSERT INTO jenis_kendaraan (gampong_id, kendaraan_roda_dua, kendaraan_roda_4,
+                              kendaraan_lebih_roda_4, kendaraan_lainnya, tahun)
+                              VALUES (%s, %s, %s, %s, %s, %s)""",
+                           (gampong_id, kendaraan_roda_dua, kendaraan_roda_4, kendaraan_lebih_roda_4, kendaraan_lainnya, tahun))
+            conn.commit()
+            flash('Data Jenis Kendaraan berhasil ditambahkan!', 'success')
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+    return redirect(url_for('manage_data_page'))
+
+@app.route('/data/jenis_kendaraan/edit/<int:id>', methods=['POST'])
+@login_required
+def edit_jenis_kendaraan(id):
+    if request.method == 'POST':
+        try:
+            gampong_id = request.form['gampong_id']
+            kendaraan_roda_dua = request.form['kendaraan_roda_dua']
+            kendaraan_roda_4 = request.form['kendaraan_roda_4']
+            kendaraan_lebih_roda_4 = request.form['kendaraan_lebih_roda_4']
+            kendaraan_lainnya = request.form['kendaraan_lainnya']
+            tahun = request.form['tahun']
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""UPDATE jenis_kendaraan SET gampong_id = %s, kendaraan_roda_dua = %s,
+                              kendaraan_roda_4 = %s, kendaraan_lebih_roda_4 = %s, kendaraan_lainnya = %s, tahun = %s
+                              WHERE id = %s""",
+                           (gampong_id, kendaraan_roda_dua, kendaraan_roda_4, kendaraan_lebih_roda_4, kendaraan_lainnya, tahun, id))
+            conn.commit()
+            flash('Data Jenis Kendaraan berhasil diperbarui!', 'success')
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+    return redirect(url_for('manage_data_page'))
+
+@app.route('/data/jenis_kendaraan/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_jenis_kendaraan(id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM jenis_kendaraan WHERE id = %s", (id,))
+        conn.commit()
+        flash('Data Jenis Kendaraan berhasil dihapus.', 'success')
+    except Exception as e:
+        flash(f'Error: {str(e)}', 'danger')
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+    return redirect(url_for('manage_data_page'))
+
+# Kondisi Jalan CRUD
+@app.route('/data/kondisi_jalan/add', methods=['POST'])
+@login_required
+def add_kondisi_jalan():
+    if request.method == 'POST':
+        try:
+            gampong_id = request.form['gampong_id']
+            jalan_berlubang = request.form['jalan_berlubang']
+            jalan_jalur_dua = request.form['jalan_jalur_dua']
+            jalan_tikungan = request.form['jalan_tikungan']
+            jalanan_sempit = request.form['jalanan_sempit']
+            tahun = request.form['tahun']
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""INSERT INTO kondisi_jalan (gampong_id, jalan_berlubang, jalan_jalur_dua,
+                              jalan_tikungan, jalanan_sempit, tahun)
+                              VALUES (%s, %s, %s, %s, %s, %s)""",
+                           (gampong_id, jalan_berlubang, jalan_jalur_dua, jalan_tikungan, jalanan_sempit, tahun))
+            conn.commit()
+            flash('Data Kondisi Jalan berhasil ditambahkan!', 'success')
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+    return redirect(url_for('manage_data_page'))
+
+@app.route('/data/kondisi_jalan/edit/<int:id>', methods=['POST'])
+@login_required
+def edit_kondisi_jalan(id):
+    if request.method == 'POST':
+        try:
+            gampong_id = request.form['gampong_id']
+            jalan_berlubang = request.form['jalan_berlubang']
+            jalan_jalur_dua = request.form['jalan_jalur_dua']
+            jalan_tikungan = request.form['jalan_tikungan']
+            jalanan_sempit = request.form['jalanan_sempit']
+            tahun = request.form['tahun']
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""UPDATE kondisi_jalan SET gampong_id = %s, jalan_berlubang = %s,
+                              jalan_jalur_dua = %s, jalan_tikungan = %s, jalanan_sempit = %s, tahun = %s
+                              WHERE id = %s""",
+                           (gampong_id, jalan_berlubang, jalan_jalur_dua, jalan_tikungan, jalanan_sempit, tahun, id))
+            conn.commit()
+            flash('Data Kondisi Jalan berhasil diperbarui!', 'success')
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+    return redirect(url_for('manage_data_page'))
+
+@app.route('/data/kondisi_jalan/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_kondisi_jalan(id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM kondisi_jalan WHERE id = %s", (id,))
+        conn.commit()
+        flash('Data Kondisi Jalan berhasil dihapus.', 'success')
+    except Exception as e:
+        flash(f'Error: {str(e)}', 'danger')
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+    return redirect(url_for('manage_data_page'))
+
+# Koordinat CRUD
+@app.route('/data/koordinat/add', methods=['POST'])
+@login_required
+def add_koordinat():
+    if request.method == 'POST':
+        try:
+            gampong_id = request.form['gampong_id']
+            latitude = request.form['latitude']
+            longitude = request.form['longitude']
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""INSERT INTO koordinat (gampong_id, latitude, longitude)
+                              VALUES (%s, %s, %s)""",
+                           (gampong_id, latitude, longitude))
+            conn.commit()
+            flash('Data Koordinat berhasil ditambahkan!', 'success')
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+    return redirect(url_for('manage_data_page'))
+
+@app.route('/data/koordinat/edit/<int:id>', methods=['POST'])
+@login_required
+def edit_koordinat(id):
+    if request.method == 'POST':
+        try:
+            gampong_id = request.form['gampong_id']
+            latitude = request.form['latitude']
+            longitude = request.form['longitude']
+            
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""UPDATE koordinat SET gampong_id = %s, latitude = %s, longitude = %s
+                              WHERE id = %s""",
+                           (gampong_id, latitude, longitude, id))
+            conn.commit()
+            flash('Data Koordinat berhasil diperbarui!', 'success')
+        except Exception as e:
+            flash(f'Error: {str(e)}', 'danger')
+        finally:
+            if conn.is_connected():
+                cursor.close()
+                conn.close()
+    return redirect(url_for('manage_data_page'))
+
+@app.route('/data/koordinat/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_koordinat(id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM koordinat WHERE id = %s", (id,))
+        conn.commit()
+        flash('Data Koordinat berhasil dihapus.', 'success')
+    except Exception as e:
+        flash(f'Error: {str(e)}', 'danger')
+    finally:
+        if conn.is_connected():
+            cursor.close()
+            conn.close()
+    return redirect(url_for('manage_data_page'))
+
 
 # Route untuk detail wilayah (gampong)
 @app.route('/detail/<nama_gampong>')
+@login_required
 def detail_gampong(nama_gampong):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -1064,12 +1398,39 @@ def detail_gampong(nama_gampong):
                            )
 
 # Login Page
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     """
-    Render the login page with a dummy button to access the admin dashboard
+    Handle login for admin dashboard access
     """
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if check_credentials(username, password):
+            session['logged_in'] = True
+            session['username'] = username
+            flash('Login berhasil! Selamat datang di dashboard admin.', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Username atau password salah! Silakan coba lagi.', 'danger')
+            return render_template('login.html')
+    
+    # If user is already logged in, redirect to dashboard
+    if 'logged_in' in session:
+        return redirect(url_for('dashboard'))
+    
     return render_template('login.html')
+
+# Logout Route
+@app.route('/logout')
+def logout():
+    """
+    Handle user logout
+    """
+    session.clear()
+    flash('Anda telah berhasil logout.', 'info')
+    return redirect(url_for('login'))
 
 # Public Dashboard Page
 @app.route('/public')
@@ -1199,6 +1560,7 @@ def public_dashboard():
 
 # K-Medoids Simulation Page
 @app.route('/kmedoids')
+@login_required
 def kmedoids_page():
     """
     Render the K-Medoids simulation page with proper error handling
@@ -1225,6 +1587,7 @@ def kmedoids_page():
 
 # API untuk simulasi K-Medoids dengan detail proses
 @app.route('/api/kmedoids_simulation', methods=['POST'])
+@login_required
 def kmedoids_simulation_api():
     try:
         # Parse request parameters
@@ -1336,25 +1699,40 @@ def kmedoids_simulation_api():
                     })
             except Exception as e:
                 app.logger.error(f"Error generating t-SNE: {e}")
-        
-        # Prepare result
+          # Prepare result
         result = {
             'input_data': df.to_dict('records'),
             'results': {
                 'k': k,
                 'num_data_points': len(df),
                 'execution_time': execution_time,
-                'iterations': iterations,
+                'medoids': medoids.tolist() if isinstance(medoids, np.ndarray) else medoids,
                 'logs': logs,
+                'iterations': iterations,
                 'feature_importance': feature_importance,
-                'tsne': tsne_results
+                'tsne_results': tsne_results,
+                'year_filter': year_filter,
+                'selected_features': selected_features
             }
         }
         
         return jsonify(result)
     
+    except mysql.connector.Error as e:
+        app.logger.error(f"Database error in K-Medoids simulation: {e}")
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
     except Exception as e:
         app.logger.error(f"Error in K-Medoids simulation: {e}")
+        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+    finally:
+        # Ensure database connection is closed
+        try:
+            if 'conn' in locals() and conn.is_connected():
+                cursor.close()
+                conn.close()
+        except:
+            pass
+
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
