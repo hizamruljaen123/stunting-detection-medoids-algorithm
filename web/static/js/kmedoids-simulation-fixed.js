@@ -175,6 +175,16 @@ function createClusterMap(inputData, results) {
         return;
     }
     
+    // Clear existing map if it exists
+    if (clusterMap) {
+        clusterMap.remove();
+        clusterMap = null;
+        console.log('Previous map instance cleared');
+    }
+    
+    // Clear the map container HTML to ensure clean state
+    mapElement.innerHTML = '';
+    
     // Find data point with valid coordinates for center
     let centerPoint = inputData.find(point => 
         point.latitude && point.longitude && 
@@ -187,7 +197,7 @@ function createClusterMap(inputData, results) {
         ? [parseFloat(centerPoint.latitude), parseFloat(centerPoint.longitude)] 
         : [5.1794, 97.1328]; // Lhokseumawe coordinates
     
-    // Create map
+    // Create new map instance
     if (document.getElementById('clusterMap')) {
         clusterMap = L.map('clusterMap').setView(center, 9);
         
