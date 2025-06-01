@@ -149,8 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td class="py-2 px-4 border-b">${area.name || area.nama_gampong}</td>
                     <td class="py-2 px-4 border-b">${area.accidents}</td>
                     <td class="py-2 px-4 border-b">${area.deaths}</td>
-                    <td class="py-2 px-4 border-b">${area.serious || 0}</td>
-                    <td class="py-2 px-4 border-b">${area.minor || 0}</td>
                     <td class="py-2 px-4 border-b">
                         <span class="px-2 py-1 rounded-full text-xs font-medium ${riskClass}">
                             ${risk}

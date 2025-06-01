@@ -152,40 +152,46 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gampong</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meninggal</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Berat</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Ringan</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 {% for item in korban_data %}
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.id }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            {{ item.jumlah_meninggal }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                            {{ item.jumlah_luka_berat }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <button onclick="openEditKorbanModal({{ item.id | tojson }}, {{ item.gampong_id | tojson }}, {{ item.jumlah_meninggal | tojson }}, {{ item.tahun | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
-                                            <i class="fas fa-edit mr-1"></i>Edit
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        {{ item.jumlah_meninggal }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        {{ item.jumlah_luka_berat }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        {{ item.jumlah_luka_ringan }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <button onclick="openEditKorbanModal({{ item.id | tojson }}, {{ item.gampong_id | tojson }}, {{ item.jumlah_meninggal | tojson }}, {{ item.jumlah_luka_berat | tojson }}, {{ item.jumlah_luka_ringan | tojson }}, {{ item.tahun | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
+                                        <i class="fas fa-edit mr-1"></i>Edit
+                                    </button>
+                                    <form method="POST" action="{{ url_for('delete_korban', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus data korban ID {{ item.id }}?');">
+                                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs transition-colors duration-200">
+                                            <i class="fas fa-trash-alt mr-1"></i>Hapus
                                         </button>
-                                        <form method="POST" action="{{ url_for('delete_korban', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus data korban ID {{ item.id }}?');">
-                                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs transition-colors duration-200">
-                                                <i class="fas fa-trash mr-1"></i>Hapus
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
                         </table>
                     </div>
                 </div>
@@ -437,17 +443,12 @@
                             </button>
                         </nav>
                     </div>
-                    
-                    <!-- Charts Tab Content -->
+                      <!-- Charts Tab Content -->
                     <div id="chartsTabContent" class="statistics-tab-content">
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div class="bg-white border rounded-lg p-4">
                                 <h4 class="text-lg font-medium text-gray-900 mb-4">Tren Kecelakaan per Tahun</h4>
                                 <canvas id="accidentsChart" width="400" height="200"></canvas>
-                            </div>
-                            <div class="bg-white border rounded-lg p-4">
-                                <h4 class="text-lg font-medium text-gray-900 mb-4">Tren Korban per Tahun</h4>
-                                <canvas id="victimsChart" width="400" height="200"></canvas>
                             </div>
                             <div class="bg-white border rounded-lg p-4">
                                 <h4 class="text-lg font-medium text-gray-900 mb-4">Jenis Kendaraan per Tahun</h4>
@@ -481,32 +482,7 @@
                                         <tbody id="accidentsStatsBody" class="bg-white divide-y divide-gray-200">
                                         </tbody>
                                     </table>
-                                </div>
-                            </div>
-                            
-                            <!-- Korban Table -->
-                            <div class="bg-white border rounded-lg overflow-hidden">
-                                <div class="bg-orange-50 px-4 py-3 border-b">
-                                    <h4 class="text-lg font-medium text-orange-800">
-                                        <i class="fas fa-users mr-2"></i>Data Korban
-                                    </h4>
-                                </div>
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200" id="victimsStatsTable">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meninggal</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Berat</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Ringan</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="victimsStatsBody" class="bg-white divide-y divide-gray-200">
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                </div>                            </div>
                             
                             <!-- Jenis Kendaraan Table -->
                             <div class="bg-white border rounded-lg overflow-hidden">
@@ -1066,16 +1042,13 @@
         document.getElementById('totalVictims').textContent = data.summary.total_korban || 0;
         document.getElementById('totalDeaths').textContent = data.summary.total_meninggal || 0;
         document.getElementById('yearsRecorded').textContent = data.summary.years_recorded || 0;
-        
-        // Populate charts
+          // Populate charts
         createAccidentsChart(data.yearly_data.kecelakaan);
-        createVictimsChart(data.yearly_data.korban);
         createVehiclesChart(data.yearly_data.kendaraan);
         createRoadConditionsChart(data.yearly_data.jalan);
         
         // Populate tables
         populateAccidentsTable(data.yearly_data.kecelakaan);
-        populateVictimsTable(data.yearly_data.korban);
         populateVehiclesTable(data.yearly_data.kendaraan);
         populateRoadConditionsTable(data.yearly_data.jalan);
         

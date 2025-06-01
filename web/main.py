@@ -1430,9 +1430,7 @@ def public_dashboard():
         
         # Get list of years for filter dropdown
         cursor.execute("SELECT DISTINCT tahun FROM kecelakaan ORDER BY tahun DESC")
-        years = [row['tahun'] for row in cursor.fetchall()]
-        
-        # Build base query for accident data filtering
+        years = [row['tahun'] for row in cursor.fetchall()]        # Build base query for accident data filtering
         year_filter = ""
         params = []
         if selected_year and selected_year != 'all':
@@ -1493,22 +1491,34 @@ def public_dashboard():
                 SUM(kendaraan_lainnya) as lainnya
             FROM jenis_kendaraan
         """ + year_filter, params)
-        vehicle_types = cursor.fetchone()
-        
-        # Get high risk areas
-        cursor.execute("""
-            SELECT 
-                g.nama_gampong,
-                SUM(k.jumlah_kecelakaan) as accidents,
-                SUM(korban.jumlah_meninggal) as deaths
-            FROM gampong g
-            JOIN kecelakaan k ON g.id = k.gampong_id
-            JOIN korban ON g.id = korban.gampong_id AND k.tahun = korban.tahun
-        """ + year_filter + """
-            GROUP BY g.id, g.nama_gampong
-            ORDER BY accidents DESC
-            LIMIT 5
-        """, params)
+        vehicle_types = cursor.fetchone()        # Get high risk areas
+        if selected_year and selected_year != 'all':
+            cursor.execute("""
+                SELECT 
+                    g.nama_gampong,
+                    SUM(k.jumlah_kecelakaan) as accidents,
+                    SUM(korban.jumlah_meninggal) as deaths
+                FROM gampong g
+                JOIN kecelakaan k ON g.id = k.gampong_id
+                JOIN korban ON g.id = korban.gampong_id AND k.tahun = korban.tahun
+                WHERE k.tahun = %s
+                GROUP BY g.id, g.nama_gampong
+                ORDER BY accidents DESC
+                LIMIT 5
+            """, [selected_year])
+        else:
+            cursor.execute("""
+                SELECT 
+                    g.nama_gampong,
+                    SUM(k.jumlah_kecelakaan) as accidents,
+                    SUM(korban.jumlah_meninggal) as deaths
+                FROM gampong g
+                JOIN kecelakaan k ON g.id = k.gampong_id
+                JOIN korban ON g.id = korban.gampong_id AND k.tahun = korban.tahun
+                GROUP BY g.id, g.nama_gampong
+                ORDER BY accidents DESC
+                LIMIT 5
+            """)
         high_risk_areas = cursor.fetchall()
         
         cursor.close()
