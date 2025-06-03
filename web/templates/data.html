@@ -277,28 +277,24 @@
                         <table class="min-w-full divide-y divide-gray-200" id="kondisiJalanTable">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gampong</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jalan Berlubang</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jalan Jalur Dua</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jalan Tikungan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jalanan Sempit</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                                </tr>
+                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gampong</th>
+                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jalan Berlubang</th>
+                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jalan Jalur Dua</th>
+                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
+                                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                               </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 {% for item in kondisi_jalan_data %}
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.id }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jalan_berlubang }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jalan_jalur_dua }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jalan_tikungan }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jalanan_sempit }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <button onclick="openEditKondisiJalanModal({{ item.id | tojson }}, {{ item.gampong_id | tojson }}, {{ item.jalan_berlubang | tojson }}, {{ item.jalan_jalur_dua | tojson }}, {{ item.jalan_tikungan | tojson }}, {{ item.jalanan_sempit | tojson }}, {{ item.tahun | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
+                                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>
+                                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jalan_berlubang }}</td>
+                                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.jalan_jalur_dua }}</td>
+                                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
+                                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                       <button onclick="openEditKondisiJalanModal({{ item.id | tojson }}, {{ item.gampong_id | tojson }}, {{ item.jalan_berlubang | tojson }}, {{ item.jalan_jalur_dua | tojson }}, {{ item.tahun | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
                                             <i class="fas fa-edit mr-1"></i>Edit
                                         </button>
                                         <form method="POST" action="{{ url_for('delete_kondisi_jalan', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus data kondisi jalan ID {{ item.id }}?');">
@@ -517,11 +513,8 @@
                                     <table class="min-w-full divide-y divide-gray-200" id="roadConditionsStatsTable">
                                         <thead class="bg-gray-50">
                                             <tr>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Berlubang</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Berlubang</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jalur Dua</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tikungan</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sempit</th>
                                             </tr>
                                         </thead>
                                         <tbody id="roadConditionsStatsBody" class="bg-white divide-y divide-gray-200">
@@ -758,16 +751,8 @@
                 </div>
                 <div>
                     <label for="add_jalan_jalur_dua" class="block text-sm font-medium text-gray-700 text-left">Jalan Jalur Dua</label>
-                    <input type="number" name="jalan_jalur_dua" id="add_jalan_jalur_dua" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="add_jalan_tikungan" class="block text-sm font-medium text-gray-700 text-left">Jalan Tikungan</label>
-                    <input type="number" name="jalan_tikungan" id="add_jalan_tikungan" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="add_jalanan_sempit" class="block text-sm font-medium text-gray-700 text-left">Jalanan Sempit</label>
-                    <input type="number" name="jalanan_sempit" id="add_jalanan_sempit" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
+                    <input type="number" name="jalan_jalur_dua" id="add_jalan_jalur_dua" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">                </div>
+                <!-- Removed Jalan Tikungan and Jalanan Sempit fields from add form -->
                 <div>
                     <label for="add_kj_tahun" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
                     <input type="number" name="tahun" id="add_kj_tahun" required min="2000" max="2099" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
@@ -798,16 +783,8 @@
                 </div>
                 <div>
                     <label for="edit_jalan_jalur_dua_field" class="block text-sm font-medium text-gray-700 text-left">Jalan Jalur Dua</label>
-                    <input type="number" name="jalan_jalur_dua" id="edit_jalan_jalur_dua_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="edit_jalan_tikungan_field" class="block text-sm font-medium text-gray-700 text-left">Jalan Tikungan</label>
-                    <input type="number" name="jalan_tikungan" id="edit_jalan_tikungan_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="edit_jalanan_sempit_field" class="block text-sm font-medium text-gray-700 text-left">Jalanan Sempit</label>
-                    <input type="number" name="jalanan_sempit" id="edit_jalanan_sempit_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
+                    <input type="number" name="jalan_jalur_dua" id="edit_jalan_jalur_dua_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">                </div>
+                <!-- Removed Jalan Tikungan and Jalanan Sempit fields from edit form -->
                 <div>
                     <label for="edit_kj_tahun_field" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
                     <input type="number" name="tahun" id="edit_kj_tahun_field" required min="2000" max="2099" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
@@ -933,14 +910,11 @@
         document.getElementById('editJenisKendaraanForm').action = `/data/jenis_kendaraan/edit/${id}`;
         openModal('editJenisKendaraanModal');
     }
-    
-    function openEditKondisiJalanModal(id, gampong_id, berlubang, jalur_dua, tikungan, sempit, tahun) {
+      function openEditKondisiJalanModal(id, gampong_id, berlubang, jalur_dua, tahun) {
         document.getElementById('edit_kj_id_field').value = id;
         document.getElementById('edit_kj_gampong_id_field').value = gampong_id;
         document.getElementById('edit_jalan_berlubang_field').value = berlubang;
         document.getElementById('edit_jalan_jalur_dua_field').value = jalur_dua;
-        document.getElementById('edit_jalan_tikungan_field').value = tikungan;
-        document.getElementById('edit_jalanan_sempit_field').value = sempit;
         document.getElementById('edit_kj_tahun_field').value = tahun;
         document.getElementById('editKondisiJalanForm').action = `/data/kondisi_jalan/edit/${id}`;
         openModal('editKondisiJalanModal');
@@ -1247,12 +1221,9 @@
         if (roadConditionsChartInstance) {
             roadConditionsChartInstance.destroy();
         }
-        
-        const years = data.map(item => item.tahun);
+          const years = data.map(item => item.tahun);
         const berlubang = data.map(item => item.jalan_berlubang);
         const jalurDua = data.map(item => item.jalan_jalur_dua);
-        const tikungan = data.map(item => item.jalan_tikungan);
-        const sempit = data.map(item => item.jalanan_sempit || 0); // Handle null values
         
         roadConditionsChartInstance = new Chart(ctx, {
             type: 'bar',
@@ -1265,26 +1236,11 @@
                         backgroundColor: 'rgba(239, 68, 68, 0.8)',
                         borderColor: 'rgba(239, 68, 68, 1)',
                         borderWidth: 1
-                    },
-                    {
+                    },                    {
                         label: 'Jalur Dua',
                         data: jalurDua,
                         backgroundColor: 'rgba(34, 197, 94, 0.8)',
                         borderColor: 'rgba(34, 197, 94, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Tikungan',
-                        data: tikungan,
-                        backgroundColor: 'rgba(245, 158, 11, 0.8)',
-                        borderColor: 'rgba(245, 158, 11, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Sempit',
-                        data: sempit,
-                        backgroundColor: 'rgba(139, 92, 246, 0.8)',
-                        borderColor: 'rgba(139, 92, 246, 1)',
                         borderWidth: 1
                     }
                 ]
@@ -1365,13 +1321,10 @@
         tbody.innerHTML = '';
         
         data.forEach(item => {
-            const row = `
-                <tr>
+            const row = `                <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.tahun}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.jalan_berlubang}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.jalan_jalur_dua}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.jalan_tikungan}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.jalanan_sempit || 0}</td>
                 </tr>
             `;
             tbody.innerHTML += row;

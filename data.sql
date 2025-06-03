@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `jenis_kendaraan` (
   PRIMARY KEY (`id`),
   KEY `gampong_id` (`gampong_id`),
   CONSTRAINT `jenis_kendaraan_ibfk_1` FOREIGN KEY (`gampong_id`) REFERENCES `gampong` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=81 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Data exporting was unselected.
 
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `kecelakaan` (
   PRIMARY KEY (`id`),
   KEY `gampong_id` (`gampong_id`),
   CONSTRAINT `kecelakaan_ibfk_1` FOREIGN KEY (`gampong_id`) REFERENCES `gampong` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=82 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Data exporting was unselected.
 
@@ -58,13 +58,11 @@ CREATE TABLE IF NOT EXISTS `kondisi_jalan` (
   `gampong_id` int NOT NULL,
   `jalan_berlubang` int DEFAULT NULL,
   `jalan_jalur_dua` int DEFAULT NULL,
-  `jalan_tikungan` int DEFAULT NULL,
-  `jalanan_sempit` int DEFAULT NULL,
   `tahun` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `gampong_id` (`gampong_id`),
   CONSTRAINT `kondisi_jalan_ibfk_1` FOREIGN KEY (`gampong_id`) REFERENCES `gampong` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=81 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Data exporting was unselected.
 
@@ -86,13 +84,11 @@ CREATE TABLE IF NOT EXISTS `korban` (
   `id` int NOT NULL AUTO_INCREMENT,
   `gampong_id` int NOT NULL,
   `jumlah_meninggal` int DEFAULT NULL,
-  `jumlah_luka_berat` int DEFAULT NULL,
-  `jumlah_luka_ringan` int DEFAULT NULL,
   `tahun` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `gampong_id` (`gampong_id`),
   CONSTRAINT `korban_ibfk_1` FOREIGN KEY (`gampong_id`) REFERENCES `gampong` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=81 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Data exporting was unselected.
 

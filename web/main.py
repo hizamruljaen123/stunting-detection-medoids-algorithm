@@ -199,7 +199,7 @@ def process_data_for_k_medoids(df_combined, k=3, max_iter=100, columns_to_use=No
         columns_to_use = [
             'jumlah_kecelakaan', 'jumlah_meninggal',
             'kendaraan_roda_dua', 'kendaraan_roda_4', 'kendaraan_lebih_roda_4', 'kendaraan_lainnya',
-            'jalan_berlubang', 'jalan_jalur_dua', 'jalan_tikungan', 'jalanan_sempit'
+            'jalan_berlubang', 'jalan_jalur_dua'
         ]
     
     # Ensure all requested columns exist and fill NaN
@@ -398,7 +398,7 @@ def get_combined_data(tahun_filter=None, gampong_filter=None):
             kec.tahun, kec.jumlah_kecelakaan,
             ko.jumlah_meninggal,
             jk.kendaraan_roda_dua, jk.kendaraan_roda_4, jk.kendaraan_lebih_roda_4, jk.kendaraan_lainnya,
-            kjp.jalan_berlubang, kjp.jalan_jalur_dua, kjp.jalan_tikungan, kjp.jalanan_sempit,
+            kjp.jalan_berlubang, kjp.jalan_jalur_dua,
             koord.latitude, koord.longitude
         FROM gampong g
         LEFT JOIN kecelakaan kec ON g.id = kec.gampong_id
@@ -430,7 +430,7 @@ def get_combined_data(tahun_filter=None, gampong_filter=None):
     # Fill NaN values that might result from LEFT JOINs, especially for features used in clustering
     numeric_cols = ['jumlah_kecelakaan', 'jumlah_meninggal',
                     'kendaraan_roda_dua', 'kendaraan_roda_4', 'kendaraan_lebih_roda_4', 'kendaraan_lainnya',
-                    'jalan_berlubang', 'jalan_jalur_dua', 'jalan_tikungan', 'jalanan_sempit']
+                    'jalan_berlubang', 'jalan_jalur_dua']
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
@@ -905,9 +905,9 @@ def get_gampong_statistics(gampong_id):
         
         # Get yearly statistics for kondisi jalan
         cursor.execute("""
-            SELECT tahun, jalan_berlubang, jalan_jalur_dua, jalan_tikungan, jalanan_sempit 
-            FROM kondisi_jalan 
-            WHERE gampong_id = %s 
+            SELECT tahun, jalan_berlubang, jalan_jalur_dua
+            FROM kondisi_jalan
+            WHERE gampong_id = %s
             ORDER BY tahun ASC
         """, (gampong_id,))
         jalan_data = cursor.fetchall()
@@ -1607,8 +1607,6 @@ def kmedoids_simulation_api():
                 COALESCE(jk.kendaraan_lainnya, 0) as kendaraan_lainnya,
                 COALESCE(kjp.jalan_berlubang, 0) as jalan_berlubang,
                 COALESCE(kjp.jalan_jalur_dua, 0) as jalan_jalur_dua,
-                COALESCE(kjp.jalan_tikungan, 0) as jalan_tikungan,
-                COALESCE(kjp.jalanan_sempit, 0) as jalanan_sempit,
                 koord.latitude,
                 koord.longitude
             FROM gampong g
@@ -1716,5 +1714,456 @@ def kmedoids_simulation_api():
         except:
             pass
 
+# API endpoint untuk reprocess data dashboard
+@app.route('/api/reprocess_dashboard', methods=['POST'])
+def reprocess_dashboard():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Recalculate dashboard statistics
+        dashboard_data = {}
+        
+        # Total kecelakaan
+        cursor.execute("SELECT COUNT(*) as total FROM kecelakaan")
+        dashboard_data['total_kecelakaan'] = cursor.fetchone()['total']
+        
+        # Total korban
+        cursor.execute("SELECT COUNT(*) as total FROM korban")
+        dashboard_data['total_korban'] = cursor.fetchone()['total']
+        
+        # Total gampong
+        cursor.execute("SELECT COUNT(*) as total FROM gampong")
+        dashboard_data['total_gampong'] = cursor.fetchone()['total']
+        
+        # Kecelakaan per tahun (karena tidak ada kolom tanggal, hanya tahun)
+        cursor.execute("""
+        SELECT
+            tahun as tahun,
+            SUM(jumlah_kecelakaan) as jumlah
+        FROM kecelakaan
+        GROUP BY tahun
+        ORDER BY tahun
+        """)
+        dashboard_data['kecelakaan_per_tahun'] = cursor.fetchall()
+        
+        # Top 5 gampong dengan kecelakaan terbanyak
+        cursor.execute("""
+        SELECT g.nama_gampong, COUNT(k.id) as jumlah_kecelakaan
+        FROM gampong g
+        LEFT JOIN kecelakaan k ON g.id = k.gampong_id
+        GROUP BY g.id
+        ORDER BY jumlah_kecelakaan DESC
+        LIMIT 5
+        """)
+        dashboard_data['top_gampong'] = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Dashboard data berhasil diperbarui',
+            'data': dashboard_data
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in reprocess_dashboard: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API endpoint untuk reprocess data statistik kecelakaan
+@app.route('/api/reprocess_statistik_kecelakaan', methods=['POST'])
+def reprocess_statistik_kecelakaan():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Recalculate accident statistics
+        statistik_data = {}
+        
+        # Kecelakaan per gampong
+        cursor.execute("""
+        SELECT g.nama_gampong, COUNT(k.id) as jumlah_kecelakaan
+        FROM gampong g
+        LEFT JOIN kecelakaan k ON g.id = k.gampong_id
+        GROUP BY g.id, g.nama_gampong
+        ORDER BY jumlah_kecelakaan DESC
+        """)
+        statistik_data['per_gampong'] = cursor.fetchall()
+        
+        # Kecelakaan per tahun (karena tidak ada kolom tanggal, hanya tahun)
+        cursor.execute("""
+        SELECT
+            tahun as tahun,
+            SUM(jumlah_kecelakaan) as jumlah
+        FROM kecelakaan
+        GROUP BY tahun
+        ORDER BY tahun
+        """)
+        statistik_data['per_tahun'] = cursor.fetchall()
+        
+        # Kecelakaan per tahun (karena tidak ada kolom jenis_kecelakaan)
+        cursor.execute("""
+        SELECT tahun, SUM(jumlah_kecelakaan) as jumlah
+        FROM kecelakaan
+        GROUP BY tahun
+        ORDER BY jumlah DESC
+        """)
+        statistik_data['per_tahun'] = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Data statistik kecelakaan berhasil diperbarui',
+            'data': statistik_data
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in reprocess_statistik_kecelakaan: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API endpoint untuk reprocess data statistik korban
+@app.route('/api/reprocess_statistik_korban', methods=['POST'])
+def reprocess_statistik_korban():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Recalculate victim statistics
+        statistik_data = {}
+        
+        # Korban per tahun (karena tidak ada kolom jenis_kelamin, usia, kondisi)
+        cursor.execute("""
+        SELECT tahun, SUM(jumlah_meninggal) as jumlah
+        FROM korban
+        GROUP BY tahun
+        ORDER BY tahun
+        """)
+        statistik_data['per_tahun'] = cursor.fetchall()
+
+        # Total korban meninggal
+        cursor.execute("""
+        SELECT 'Meninggal' as kategori, SUM(jumlah_meninggal) as jumlah
+        FROM korban
+        """)
+        statistik_data['per_kategori'] = cursor.fetchall()
+
+        # Korban per gampong
+        cursor.execute("""
+        SELECT g.nama_gampong, SUM(k.jumlah_meninggal) as jumlah
+        FROM korban k
+        JOIN gampong g ON k.gampong_id = g.id
+        GROUP BY g.nama_gampong
+        ORDER BY jumlah DESC
+        LIMIT 10
+        """)
+        statistik_data['per_gampong'] = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Data statistik korban berhasil diperbarui',
+            'data': statistik_data
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in reprocess_statistik_korban: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API endpoint untuk reprocess data korban usia
+@app.route('/api/reprocess_korban_usia', methods=['POST'])
+def reprocess_korban_usia():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Recalculate age-based victim statistics
+        usia_data = {}
+        
+        # Data korban berdasarkan tahun (karena tidak ada kolom usia atau jenis_kelamin)
+        cursor.execute("""
+        SELECT
+            tahun,
+            SUM(jumlah_meninggal) as jumlah_korban
+        FROM korban
+        GROUP BY tahun
+        ORDER BY tahun
+        """)
+        usia_data['data_tahun'] = cursor.fetchall()
+
+        # Total korban meninggal
+        cursor.execute("SELECT SUM(jumlah_meninggal) as total_korban FROM korban")
+        usia_data['total_korban'] = cursor.fetchone()['total_korban'] or 0
+
+        # Rata-rata korban per tahun
+        cursor.execute("SELECT AVG(jumlah_meninggal) as rata_rata_korban FROM korban WHERE jumlah_meninggal IS NOT NULL")
+        rata_rata = cursor.fetchone()['rata_rata_korban']
+        usia_data['rata_rata_korban'] = round(rata_rata, 2) if rata_rata else 0
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Data korban berdasarkan usia berhasil diperbarui',
+            'data': usia_data
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in reprocess_korban_usia: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API endpoint untuk reprocess data jenis kecelakaan
+@app.route('/api/reprocess_jenis_kecelakaan', methods=['POST'])
+def reprocess_jenis_kecelakaan():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Recalculate accident type statistics
+        jenis_data = {}
+        
+        # Data kecelakaan per tahun (karena tidak ada kolom jenis_kecelakaan)
+        cursor.execute("""
+        SELECT
+            tahun,
+            SUM(jumlah_kecelakaan) as jumlah_kecelakaan,
+            COUNT(DISTINCT k.id) as total_kejadian
+        FROM kecelakaan k
+        GROUP BY tahun
+        ORDER BY jumlah_kecelakaan DESC
+        """)
+        jenis_data['data_tahun'] = cursor.fetchall()
+
+        # Total kecelakaan
+        cursor.execute("SELECT SUM(jumlah_kecelakaan) as total_kecelakaan FROM kecelakaan")
+        jenis_data['total_kecelakaan'] = cursor.fetchone()['total_kecelakaan'] or 0
+
+        # Tahun dengan kecelakaan terbanyak
+        cursor.execute("""
+        SELECT tahun, SUM(jumlah_kecelakaan) as jumlah
+        FROM kecelakaan
+        GROUP BY tahun
+        ORDER BY jumlah DESC
+        LIMIT 1
+        """)
+        jenis_data['tahun_terbanyak'] = cursor.fetchone()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Data jenis kecelakaan berhasil diperbarui',
+            'data': jenis_data
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in reprocess_jenis_kecelakaan: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Route untuk halaman korban usia
+@app.route('/korban_usia')
+def korban_usia():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Query untuk mengambil data korban berdasarkan tahun (karena tidak ada kolom usia)
+        query = """
+        SELECT
+            tahun,
+            SUM(jumlah_meninggal) as jumlah_korban
+        FROM korban
+        GROUP BY tahun
+        ORDER BY tahun
+        """
+        cursor.execute(query)
+        data_usia = cursor.fetchall()
+
+        # Query untuk statistik umum
+        cursor.execute("SELECT SUM(jumlah_meninggal) as total_korban FROM korban")
+        total_korban = cursor.fetchone()['total_korban'] or 0
+
+        # Query untuk rata-rata korban per tahun
+        cursor.execute("SELECT AVG(jumlah_meninggal) as rata_rata_usia FROM korban WHERE jumlah_meninggal IS NOT NULL")
+        rata_rata_usia = cursor.fetchone()['rata_rata_usia']
+        
+        return render_template('korban_usia.html', 
+                             data_usia=data_usia,
+                             total_korban=total_korban,
+                             rata_rata_usia=round(rata_rata_usia, 2) if rata_rata_usia else 0)
+    
+    except mysql.connector.Error as e:
+        app.logger.error(f"Database error in korban_usia route: {e}")
+        flash(f'Database error: {str(e)}', 'error')
+        return render_template('korban_usia.html', data_usia=[], total_korban=0, rata_rata_usia=0)
+    
+    finally:
+        cursor.close()
+        conn.close()
+
+# Route untuk halaman jenis kecelakaan
+@app.route('/jenis_kecelakaan')
+def jenis_kecelakaan():
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    try:
+        # Query untuk mengambil data kecelakaan per tahun (karena tidak ada kolom jenis_kecelakaan)
+        query = """
+        SELECT
+            tahun,
+            SUM(jumlah_kecelakaan) as jumlah_kecelakaan,
+            COUNT(DISTINCT k.id) as total_kejadian
+        FROM kecelakaan k
+        GROUP BY tahun
+        ORDER BY jumlah_kecelakaan DESC
+        """
+        cursor.execute(query)
+        data_jenis = cursor.fetchall()
+
+        # Query untuk total kecelakaan
+        cursor.execute("SELECT SUM(jumlah_kecelakaan) as total_kecelakaan FROM kecelakaan")
+        total_kecelakaan = cursor.fetchone()['total_kecelakaan'] or 0
+
+        # Query untuk tahun dengan kecelakaan terbanyak
+        cursor.execute("""
+        SELECT tahun, SUM(jumlah_kecelakaan) as jumlah
+        FROM kecelakaan
+        GROUP BY tahun
+        ORDER BY jumlah DESC
+        LIMIT 1
+        """)
+        jenis_terbanyak = cursor.fetchone()
+        
+        return render_template('jenis_kecelakaan.html', 
+                             data_jenis=data_jenis,
+                             total_kecelakaan=total_kecelakaan,
+                             jenis_terbanyak=jenis_terbanyak)
+    
+    except mysql.connector.Error as e:
+        app.logger.error(f"Database error in jenis_kecelakaan route: {e}")
+        flash(f'Database error: {str(e)}', 'error')
+        return render_template('jenis_kecelakaan.html', data_jenis=[], total_kecelakaan=0, jenis_terbanyak=None)
+    
+    finally:
+        cursor.close()
+        conn.close()
+
+# API endpoint untuk reprocess data peta dengan kluster K-medoids
+@app.route('/api/reprocess_peta', methods=['POST'])
+@login_required
+def reprocess_peta():
+    """API endpoint to reprocess map data with K-medoids clustering"""
+    try:
+        # Get combined data for clustering
+        df_combined = get_combined_data()
+        
+        if df_combined.empty:
+            return jsonify({'success': False, 'error': 'Tidak ada data untuk diproses'}), 404
+        
+        # Process data with K-medoids clustering
+        df_clustered, cluster_info = process_data_for_k_medoids(df_combined.copy(), k=3)
+        
+        # Get cluster statistics
+        cluster_stats = {
+            'total_data': len(df_clustered),
+            'clusters': {}
+        }
+        
+        for cluster_id in df_clustered['cluster'].unique():
+            cluster_data = df_clustered[df_clustered['cluster'] == cluster_id]
+            cluster_stats['clusters'][cluster_id] = {
+                'count': len(cluster_data),
+                'avg_accidents': cluster_data['jumlah_kecelakaan'].mean(),
+                'avg_victims': cluster_data['jumlah_meninggal'].mean()
+            }
+        
+        return jsonify({
+            'success': True,
+            'message': 'Data peta dan kluster berhasil diperbarui',
+            'stats': cluster_stats,
+            'cluster_info': cluster_info
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in reprocess_peta: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API endpoint untuk reprocess data detail gampong individu
+@app.route('/api/reprocess_detail/<gampong_nama>', methods=['POST'])
+@login_required
+def reprocess_detail(gampong_nama):
+    """API endpoint to reprocess individual gampong detail data"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get gampong info
+        cursor.execute("SELECT * FROM gampong WHERE nama_gampong = %s", (gampong_nama,))
+        gampong_info = cursor.fetchone()
+        
+        if not gampong_info:
+            return jsonify({'success': False, 'error': 'Gampong tidak ditemukan'}), 404
+        
+        gampong_id = gampong_info['id']
+        
+        # Recalculate statistics for this gampong
+        detail_stats = {}
+        
+        # Total kecelakaan
+        cursor.execute("SELECT COUNT(*) as total FROM kecelakaan WHERE gampong_id = %s", (gampong_id,))
+        detail_stats['total_kecelakaan'] = cursor.fetchone()['total']
+        
+        # Total korban meninggal
+        cursor.execute("""
+        SELECT
+            COALESCE(SUM(jumlah_meninggal), 0) as total_korban
+        FROM korban WHERE gampong_id = %s
+        """, (gampong_id,))
+        detail_stats['total_korban'] = cursor.fetchone()['total_korban']
+        
+        # Kecelakaan per tahun
+        cursor.execute("""
+        SELECT tahun, COUNT(*) as jumlah 
+        FROM kecelakaan 
+        WHERE gampong_id = %s 
+        GROUP BY tahun 
+        ORDER BY tahun
+        """, (gampong_id,))
+        detail_stats['yearly_accidents'] = cursor.fetchall()
+        
+        # Kecelakaan per tahun untuk gampong ini
+        cursor.execute("""
+        SELECT tahun, SUM(jumlah_kecelakaan) as jumlah
+        FROM kecelakaan
+        WHERE gampong_id = %s
+        GROUP BY tahun
+        ORDER BY jumlah DESC
+        """, (gampong_id,))
+        detail_stats['accident_by_year'] = cursor.fetchall()
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Data detail untuk {gampong_nama} berhasil diperbarui',
+            'data': detail_stats
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in reprocess_detail: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+    
+

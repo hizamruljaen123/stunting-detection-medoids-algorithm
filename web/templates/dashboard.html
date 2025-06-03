@@ -1,11 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-100 p-6">
-    <!-- Header -->
+<div class="min-h-screen bg-gray-100 p-6">    <!-- Header -->
     <div class="mb-8 text-center">
         <h1 class="text-4xl font-bold text-indigo-800 mb-2">Dashboard Kecelakaan Lalu Lintas</h1>
         <p class="text-gray-600">Kota Lhokseumawe - Analisis Data Kecelakaan</p>
+        <div class="mt-4">
+            <button id="reprocessDashboard" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                <svg class="inline-block w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Perbarui Data Dashboard
+            </button>
+        </div>
     </div>
 
     <!-- Stats Cards -->
@@ -123,6 +130,60 @@
 <script>
 // Toggle sidebar
 document.addEventListener('DOMContentLoaded', function() {
+    // Reprocess dashboard data function
+    document.getElementById('reprocessDashboard').addEventListener('click', function() {
+        const button = this;
+        const originalText = button.innerHTML;
+        
+        // Show loading state
+        button.innerHTML = '<svg class="inline-block w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Memproses...';
+        button.disabled = true;
+        
+        fetch('/api/reprocess_dashboard', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showNotification('Data dashboard berhasil diperbarui!', 'success');
+                // Reload page to show updated data
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification('Gagal memperbarui data: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Terjadi kesalahan saat memperbarui data', 'error');
+        })
+        .finally(() => {
+            // Restore button state
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    });
+
+    // Notification function
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 transition-all duration-300 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('opacity-0');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+
     // Prepare data for charts - Use |safe filter as Flask already provides JSON string
     let korbanSummaryLabels, korbanSummaryData, kecelakaanTahunLabels, kecelakaanTahunData;
     try {

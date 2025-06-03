@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-gray-900">Statistik Korban Berdasarkan Usia</h1>
+    <button id="reprocessBtn" onclick="reprocessData()" 
+            class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+        <svg id="reprocessIcon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        <span id="reprocessText">Perbarui Data Korban Usia</span>
+    </button>
+</div>
+
 {% if not usia_data %}
 <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6">
     <div class="flex">
@@ -86,4 +97,61 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+async function reprocessData() {
+    const btn = document.getElementById('reprocessBtn');
+    const icon = document.getElementById('reprocessIcon');
+    const text = document.getElementById('reprocessText');
+    
+    // Set loading state
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    icon.classList.add('animate-spin');
+    text.textContent = 'Memproses...';
+    
+    try {
+        const response = await fetch('/api/reprocess_korban_usia', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.textContent = result.message || 'Data korban usia berhasil diperbarui!';
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds and reload page
+            setTimeout(() => {
+                document.body.removeChild(notification);
+                window.location.reload();
+            }, 3000);
+        } else {
+            throw new Error(result.error || 'Terjadi kesalahan saat memproses data');
+        }
+    } catch (error) {
+        // Error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        notification.textContent = error.message || 'Terjadi kesalahan saat memproses data';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 5000);
+    } finally {
+        // Reset button state
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        icon.classList.remove('animate-spin');
+        text.textContent = 'Perbarui Data Korban Usia';
+    }
+}
+</script>
 {% endblock %}

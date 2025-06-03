@@ -3,13 +3,19 @@
 {% block content %}
 <div class="container mx-auto px-4 py-6">
     <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Peta Interaktif Kecelakaan Lalu Lintas</h2>
-        <div class="flex space-x-2">
+        <h2 class="text-2xl font-bold text-gray-800">Peta Interaktif Kecelakaan Lalu Lintas</h2>        <div class="flex space-x-2">
             <button id="refreshMap" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg id="refreshIcon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
-                Refresh Data
+                <span id="refreshText">Refresh Data</span>
+            </button>
+            <button id="reprocessBtn" onclick="reprocessMapData()" 
+                    class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
+                <svg id="reprocessIcon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span id="reprocessText">Proses Ulang Kluster</span>
             </button>
             <button id="clusterToggle" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md">
                 Cluster Mode
@@ -107,4 +113,66 @@
         <span>Memuat data...</span>
     </div>
 </div>
+
+<script>
+async function reprocessMapData() {
+    const btn = document.getElementById('reprocessBtn');
+    const icon = document.getElementById('reprocessIcon');
+    const text = document.getElementById('reprocessText');
+    
+    // Set loading state
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    icon.classList.add('animate-spin');
+    text.textContent = 'Memproses Kluster...';
+    
+    try {
+        const response = await fetch('/api/reprocess_peta', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.textContent = result.message || 'Kluster peta berhasil diperbarui!';
+            document.body.appendChild(notification);
+            
+            // Reload map data after successful reprocessing
+            setTimeout(() => {
+                document.body.removeChild(notification);
+                // Trigger map data reload if loadMapData function exists
+                if (typeof loadMapData === 'function') {
+                    loadMapData();
+                } else {
+                    window.location.reload();
+                }
+            }, 3000);
+        } else {
+            throw new Error(result.error || 'Terjadi kesalahan saat memproses kluster');
+        }
+    } catch (error) {
+        // Error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        notification.textContent = error.message || 'Terjadi kesalahan saat memproses kluster';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 5000);
+    } finally {
+        // Reset button state
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        icon.classList.remove('animate-spin');
+        text.textContent = 'Proses Ulang Kluster';
+    }
+}
+</script>
 {% endblock %}

@@ -3,10 +3,16 @@
 {% block title %}Detail {{ gampong_nama }} - Dashboard Kecelakaan{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
+<div class="container mx-auto px-4 py-8">    <!-- Header -->
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-800">Detail Gampong: {{ gampong_nama }}</h1>
+        <button id="reprocessBtn" onclick="reprocessDetailData()" 
+                class="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+            <svg id="reprocessIcon" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <span id="reprocessText">Perbarui Data Detail</span>
+        </button>
     </div>
 
     <!-- Stat Cards -->
@@ -170,4 +176,62 @@
 
 <!-- Chart containers are already in the template, detail.js will populate them -->
 <script src="{{ url_for('static', filename='js/detail.js') }}"></script>
+
+<script>
+async function reprocessDetailData() {
+    const btn = document.getElementById('reprocessBtn');
+    const icon = document.getElementById('reprocessIcon');
+    const text = document.getElementById('reprocessText');
+    const gampongNama = '{{ gampong_nama }}';
+    
+    // Set loading state
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    icon.classList.add('animate-spin');
+    text.textContent = 'Memproses...';
+    
+    try {
+        const response = await fetch(`/api/reprocess_detail/${encodeURIComponent(gampongNama)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.textContent = result.message || 'Data detail berhasil diperbarui!';
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds and reload page
+            setTimeout(() => {
+                document.body.removeChild(notification);
+                window.location.reload();
+            }, 3000);
+        } else {
+            throw new Error(result.error || 'Terjadi kesalahan saat memproses data');
+        }
+    } catch (error) {
+        // Error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        notification.textContent = error.message || 'Terjadi kesalahan saat memproses data';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 5000);
+    } finally {
+        // Reset button state
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        icon.classList.remove('animate-spin');
+        text.textContent = 'Perbarui Data Detail';
+    }
+}
+</script>
 {% endblock %}

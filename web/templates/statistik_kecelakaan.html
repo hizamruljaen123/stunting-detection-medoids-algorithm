@@ -3,11 +3,18 @@
 {% block title %}Statistik Kecelakaan - Dashboard Kecelakaan{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
+<div class="container mx-auto px-4 py-8">    <!-- Header -->
     <div class="mb-8 text-center">
         <h1 class="text-3xl font-bold text-gray-800">Statistik Kecelakaan</h1>
         <p class="text-gray-600">Analisis data kecelakaan berdasarkan gampong dan periode waktu.</p>
+        <div class="mt-4">
+            <button id="reprocessStatistikKecelakaan" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                <svg class="inline-block w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Perbarui Statistik Kecelakaan
+            </button>
+        </div>
     </div>
 
     <!-- Chart: Total Kecelakaan per Gampong (Top 15) -->
@@ -42,6 +49,63 @@
 
 {% block scripts %}
 {{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Reprocess statistik kecelakaan data function
+    document.getElementById('reprocessStatistikKecelakaan').addEventListener('click', function() {
+        const button = this;
+        const originalText = button.innerHTML;
+        
+        // Show loading state
+        button.innerHTML = '<svg class="inline-block w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Memproses...';
+        button.disabled = true;
+        
+        fetch('/api/reprocess_statistik_kecelakaan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showNotification('Statistik kecelakaan berhasil diperbarui!', 'success');
+                // Reload page to show updated data
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification('Gagal memperbarui statistik: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Terjadi kesalahan saat memperbarui statistik', 'error');
+        })
+        .finally(() => {
+            // Restore button state
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    });
+
+    // Notification function
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg text-white z-50 transition-all duration-300 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('opacity-0');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+});
+</script>
 <!-- Plotly.js is loaded in base.html if needed, or ensure it's loaded if charts are Plotly based -->
 <!-- If using Chart.js, ensure it's loaded and initialize charts here if needed, though Flask passes HTML directly -->
 {% endblock %}
