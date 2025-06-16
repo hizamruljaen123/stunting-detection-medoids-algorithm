@@ -110,7 +110,7 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <button onclick="openEditKecelakaanModal({{ item.id | tojson }}, {{ item.gampong_id | tojson }}, {{ item.jumlah_kecelakaan | tojson }}, {{ item.tahun | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
+                                        <button onclick="openEditKecelakaanModal('{{ item.id }}', '{{ item.gampong_id }}', '{{ item.jumlah_kecelakaan }}', '{{ item.tahun }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
                                             <i class="fas fa-edit mr-1"></i>Edit
                                         </button>
                                         <form method="POST" action="{{ url_for('delete_kecelakaan', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus data kecelakaan ID {{ item.id }}?');">
@@ -178,7 +178,7 @@
                                 </td> -->
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <button onclick="openEditKorbanModal({{ item.id | tojson }},  {{ item.tahun | tojson }})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
+                                    <button onclick="openEditKorbanModal('{{ item.id }}', '{{ item.gampong_id }}', '{{ item.jumlah_meninggal }}', '{{ item.tahun }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
                                         <i class="fas fa-edit mr-1"></i>Edit
                                     </button>
                                     <form method="POST" action="{{ url_for('delete_korban', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus data korban ID {{ item.id }}?');">
@@ -600,19 +600,11 @@
                     <input type="number" name="jumlah_meninggal" id="add_jumlah_meninggal" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                 </div>
                 <div>
-                    <label for="add_jumlah_luka_berat" class="block text-sm font-medium text-gray-700 text-left">Jumlah Luka Berat</label>
-                    <input type="number" name="jumlah_luka_berat" id="add_jumlah_luka_berat" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="add_jumlah_luka_ringan" class="block text-sm font-medium text-gray-700 text-left">Jumlah Luka Ringan</label>
-                    <input type="number" name="jumlah_luka_ringan" id="add_jumlah_luka_ringan" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
                     <label for="add_korban_tahun" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
                     <input type="number" name="tahun" id="add_korban_tahun" required min="2000" max="2099" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                 </div>
                 <div class="items-center px-4 py-3">
-                    <button type="submit" class="px-4 py-2 bg-orange-500 text-white rounded-md w-full hover:bg-orange-700">Simpan</button>
+                    <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-md w-full hover:bg-green-700">Tambah</button>
                     <button type="button" onclick="closeModal('addKorbanModal')" class="mt-2 px-4 py-2 bg-gray-300 text-gray-800 rounded-md w-full hover:bg-gray-400">Batal</button>
                 </div>
             </form>
@@ -634,14 +626,6 @@
                 <div>
                     <label for="edit_jumlah_meninggal_field" class="block text-sm font-medium text-gray-700 text-left">Jumlah Meninggal</label>
                     <input type="number" name="jumlah_meninggal" id="edit_jumlah_meninggal_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="edit_jumlah_luka_berat_field" class="block text-sm font-medium text-gray-700 text-left">Jumlah Luka Berat</label>
-                    <input type="number" name="jumlah_luka_berat" id="edit_jumlah_luka_berat_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                </div>
-                <div>
-                    <label for="edit_jumlah_luka_ringan_field" class="block text-sm font-medium text-gray-700 text-left">Jumlah Luka Ringan</label>
-                    <input type="number" name="jumlah_luka_ringan" id="edit_jumlah_luka_ringan_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                 </div>
                 <div>
                     <label for="edit_korban_tahun_field" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
@@ -885,16 +869,34 @@
         document.getElementById('edit_kec_gampong_id_field').value = gampong_id;
         document.getElementById('edit_jumlah_kecelakaan_field').value = jumlah;
         document.getElementById('edit_kec_tahun_field').value = tahun;
+        // Set selected option for gampong dropdown
+        const gampongSelect = document.getElementById('edit_kec_gampong_id_field');
+        if (gampongSelect) {
+            for (let i = 0; i < gampongSelect.options.length; i++) {
+                if (gampongSelect.options[i].value == gampong_id) {
+                    gampongSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
         document.getElementById('editKecelakaanForm').action = `/data/kecelakaan/edit/${id}`;
         openModal('editKecelakaanModal');
     }
-      function openEditKorbanModal(id, gampong_id, meninggal, lb, lr, tahun) {
+      function openEditKorbanModal(id, gampong_id, meninggal, tahun) {
         document.getElementById('edit_korban_id_field').value = id;
         document.getElementById('edit_korban_gampong_id_field').value = gampong_id;
         document.getElementById('edit_jumlah_meninggal_field').value = meninggal;
-        document.getElementById('edit_jumlah_luka_berat_field').value = lb;
-        document.getElementById('edit_jumlah_luka_ringan_field').value = lr;
         document.getElementById('edit_korban_tahun_field').value = tahun;
+        // Set selected option for gampong dropdown
+        const gampongSelect = document.getElementById('edit_korban_gampong_id_field');
+        if (gampongSelect) {
+            for (let i = 0; i < gampongSelect.options.length; i++) {
+                if (gampongSelect.options[i].value == gampong_id) {
+                    gampongSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
         document.getElementById('editKorbanForm').action = `/data/korban/edit/${id}`;
         openModal('editKorbanModal');
     }
@@ -1004,7 +1006,7 @@
                 console.error('Error fetching statistics:', error);
                 alert('Terjadi kesalahan saat mengambil data statistik');
                 closeModal('statisticsModal');
-            });
+                       });
     }
 
     // Function to populate statistics data
