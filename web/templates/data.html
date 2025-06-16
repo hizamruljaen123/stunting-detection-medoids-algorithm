@@ -151,7 +151,7 @@
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gampong</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meninggal</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Meninggal</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
@@ -166,16 +166,6 @@
                                         {{ item.jumlah_meninggal }}
                                     </span>
                                 </td>
-                                <!-- <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                        {{ item.jumlah_luka_berat }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        {{ item.jumlah_luka_ringan }}
-                                    </span>
-                                </td> -->
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <button onclick="openEditKorbanModal('{{ item.id }}', '{{ item.gampong_id }}', '{{ item.jumlah_meninggal }}', '{{ item.tahun }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
@@ -991,7 +981,7 @@
         // Fetch statistics data
         fetch(`/api/gampong_statistics/${gampongId}`)
             .then(response => response.json())
-            .then(data => {
+            .then data => {
                 // Check if data is directly available (no success wrapper)
                 if (data.gampong_info) {
                     populateStatistics(data);
@@ -1102,8 +1092,6 @@
         
         const years = data.map(item => item.tahun);
         const deaths = data.map(item => item.jumlah_meninggal);
-        const serious = data.map(item => item.jumlah_luka_berat);
-        const minor = data.map(item => item.jumlah_luka_ringan);
         
         victimsChartInstance = new Chart(ctx, {
             type: 'bar',
@@ -1115,20 +1103,6 @@
                         data: deaths,
                         backgroundColor: 'rgba(107, 114, 128, 0.8)',
                         borderColor: 'rgba(107, 114, 128, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Luka Berat',
-                        data: serious,
-                        backgroundColor: 'rgba(245, 158, 11, 0.8)',
-                        borderColor: 'rgba(245, 158, 11, 1)',
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'Luka Ringan',
-                        data: minor,
-                        backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                        borderColor: 'rgba(34, 197, 94, 1)',
                         borderWidth: 1
                     }
                 ]
@@ -1286,13 +1260,11 @@
         tbody.innerHTML = '';
         
         data.forEach(item => {
-            const total = item.jumlah_meninggal + item.jumlah_luka_berat + item.jumlah_luka_ringan;
+            const total = item.jumlah_meninggal;
             const row = `
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.tahun}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.jumlah_meninggal}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.jumlah_luka_berat}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.jumlah_luka_ringan}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${total}</td>
                 </tr>
             `;

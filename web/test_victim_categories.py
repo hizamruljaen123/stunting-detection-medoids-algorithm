@@ -107,6 +107,33 @@ def generate_sample_chart_data():
         print(f"❌ Error generating sample data: {e}")
         return None
 
+def check_columns():
+    conn = None
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
+
+        # Get column information from korban table
+        cursor.execute("SHOW COLUMNS FROM korban")
+        columns = [column['Field'] for column in cursor.fetchall()]
+        print("\nColumns in korban table:", columns)
+
+        # Get sample data
+        cursor.execute("SELECT gampong_id, tahun, jumlah_meninggal FROM korban LIMIT 3")
+        rows = cursor.fetchall()
+        print("\nSample data from korban table:")
+        for row in rows:
+            print(f"  Gampong {row['gampong_id']}, Tahun {row['tahun']}: Meninggal={row['jumlah_meninggal']}")
+
+        return True
+
+    except mysql.connector.Error as err:
+        print(f"Database error: {err}")
+        return False
+    finally:
+        if conn and conn.is_connected():
+            conn.close()
+
 def main():
     print("🚀 Testing Victim Categories Implementation")
     print("=" * 50)

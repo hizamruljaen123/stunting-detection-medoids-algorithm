@@ -591,13 +591,9 @@ def dashboard():
             korban_summary_raw = cursor.fetchone()
             total_meninggal = int(korban_summary_raw['total_meninggal'] or 0)
             
-            # Generate sample data for demonstration
-            korban_summary_labels = ['Meninggal', 'Luka Berat', 'Luka Ringan']
-            korban_summary_data = [
-                total_meninggal,
-                int(total_meninggal * 1.5),  # Sample: 1.5x deaths for serious injuries
-                int(total_meninggal * 2.3)   # Sample: 2.3x deaths for minor injuries
-            ]
+            # Data untuk chart ringkasan korban
+            korban_summary_labels = ['Meninggal']
+            korban_summary_data = [total_meninggal]
         
         # Ambil data gabungan untuk peta klaster di dashboard
         df_combined = get_combined_data() # Tanpa filter untuk dashboard
@@ -715,27 +711,19 @@ def statistik_korban():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Data korban per jenis (Meninggal, Luka Berat, Luka Ringan)
+    # Data korban meninggal
     cursor.execute("""
-        SELECT
-            SUM(jumlah_meninggal) as total_meninggal,
-            SUM(COALESCE(luka_berat, 0)) as total_luka_berat,
-            SUM(COALESCE(luka_ringan, 0)) as total_luka_ringan
+        SELECT SUM(jumlah_meninggal) as total_meninggal
         FROM korban
     """)
     korban_totals_raw = cursor.fetchone()
-    korban_labels = ['Meninggal', 'Luka Berat', 'Luka Ringan']
-    korban_values = [
-        korban_totals_raw['total_meninggal'] or 0,
-        korban_totals_raw['total_luka_berat'] or 0,
-        korban_totals_raw['total_luka_ringan'] or 0
-    ]
-    pie_chart_korban = create_pie_chart_summary(korban_labels, korban_values, "Distribusi Korban")
+    korban_labels = ['Meninggal']
+    korban_values = [korban_totals_raw['total_meninggal'] or 0]
+    pie_chart_korban = create_pie_chart_summary(korban_labels, korban_values, "Total Korban Meninggal")
 
-    # Data korban per tahun (total semua kategori)
+    # Data korban meninggal per tahun
     cursor.execute("""
-        SELECT tahun,
-               SUM(jumlah_meninggal + COALESCE(luka_berat, 0) + COALESCE(luka_ringan, 0)) as total_korban
+        SELECT tahun, SUM(jumlah_meninggal) as total_korban
         FROM korban
         GROUP BY tahun
         ORDER BY tahun
@@ -743,12 +731,12 @@ def statistik_korban():
     korban_tahun_data = cursor.fetchall()
     korban_tahun_labels = [str(r['tahun']) for r in korban_tahun_data]
     korban_tahun_values = [r['total_korban'] for r in korban_tahun_data]
-    line_chart_korban_tahun = create_bar_chart_summary(korban_tahun_labels, korban_tahun_values, "Total Korban Meninggal per Tahun", "Jumlah Korban")
+    line_chart_korban_tahun = create_bar_chart_summary(korban_tahun_labels, korban_tahun_values, "Total Korban Meninggal per Tahun", "Jumlah Korban Meninggal")
 
     cursor.close()
     conn.close()
 
-    return render_template('statistik_korban.html', # Template baru mungkin diperlukan
+    return render_template('statistik_korban.html',
                            pie_chart_korban=pie_chart_korban,
                            line_chart_korban_tahun=line_chart_korban_tahun)
 
@@ -1988,7 +1976,7 @@ def reprocess_statistik_korban():
         # Recalculate victim statistics
         statistik_data = {}
         
-        # Korban per tahun (karena tidak ada kolom jenis_kelamin, usia, kondisi)
+        # Korban meninggal per tahun
         cursor.execute("""
         SELECT tahun, SUM(jumlah_meninggal) as jumlah
         FROM korban
@@ -1999,33 +1987,26 @@ def reprocess_statistik_korban():
 
         # Total korban meninggal
         cursor.execute("""
-        SELECT 'Meninggal' as kategori, SUM(jumlah_meninggal) as jumlah
+        SELECT SUM(jumlah_meninggal) as jumlah
         FROM korban
         """)
-        statistik_data['per_kategori'] = cursor.fetchall()
+        statistik_data['total'] = cursor.fetchone()
 
-        # Korban per gampong
+        # Korban meninggal per gampong
         cursor.execute("""
         SELECT g.nama_gampong, SUM(k.jumlah_meninggal) as jumlah
         FROM korban k
         JOIN gampong g ON k.gampong_id = g.id
         GROUP BY g.nama_gampong
         ORDER BY jumlah DESC
-        LIMIT 10
         """)
         statistik_data['per_gampong'] = cursor.fetchall()
-        
+
         cursor.close()
         conn.close()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Data statistik korban berhasil diperbarui',
-            'data': statistik_data
-        })
-        
+
+        return jsonify({'success': True, 'message': 'Statistik korban berhasil diperbarui'})
     except Exception as e:
-        app.logger.error(f"Error in reprocess_statistik_korban: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # API endpoint untuk reprocess data korban usia
