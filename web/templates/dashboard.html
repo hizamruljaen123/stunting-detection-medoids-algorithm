@@ -97,54 +97,62 @@
 
     <!-- Map Section -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up delay-200">
-        <div class="bg-gray-800 p-4 flex justify-between items-center">
-            <div class="flex items-center">
-                <h3 class="text-lg font-semibold text-white">Peta Sebaran Klaster Kecelakaan</h3>
-                {% if selected_year_map and selected_year_map != 'all' %}
-                <span class="ml-3 px-3 py-1 bg-indigo-600 text-white text-sm rounded-full font-medium">
-                    Tahun {{ selected_year_map }}
-                </span>
-                {% endif %}
-            </div>
-            <div class="flex items-center space-x-4">
-                <!-- Loading indicator (hidden by default) -->
-                <div id="mapLoadingIndicator" class="hidden flex items-center space-x-2">
-                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span class="text-white text-sm">Memuat data...</span>
-                </div>
-                <!-- Year filter form -->
-                <form method="GET" action="{{ url_for('dashboard') }}" id="yearFilterForm" class="flex items-center bg-gray-700 rounded-lg p-2">
-                    <label for="year_filter_map" class="text-white mr-3 text-sm font-medium">Filter Tahun:</label>
-                    <select name="year_map" id="year_filter_map" class="bg-gray-600 text-white border border-gray-500 rounded-md py-1.5 px-4 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 hover:bg-gray-500">
-                        <option value="all" {% if selected_year_map == 'all' or selected_year_map is none %}selected{% endif %}>Semua Tahun</option>
-                        {% if available_years %}
-                            {% for year in available_years|sort(reverse=true) %}
-                                <option value="{{ year }}" {% if selected_year_map == year|string %}selected{% endif %}>{{ year }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <!-- Debug info if no years available -->
-                            <option value="" disabled>No years available</option>
+        <div class="bg-gray-800 p-4">
+            <div class="flex flex-col space-y-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center">
+                        <h3 class="text-lg font-semibold text-white">Peta Sebaran Klaster Kecelakaan</h3>
+                        {% if selected_year_map and selected_year_map != 'all' %}
+                        <span class="ml-3 px-3 py-1 bg-indigo-600 text-white text-sm rounded-full font-medium">
+                            Tahun {{ selected_year_map }}
+                        </span>
                         {% endif %}
-                    </select>
-                    <!-- Debug info hidden div -->
-                    <div class="hidden">
-                        Available years: {{ available_years|default('None', true) }}
-                        Selected year: {{ selected_year_map|default('None', true) }}
                     </div>
-                    <!-- Reset filter button -->
-                    {% if selected_year_map and selected_year_map != 'all' %}
-                    <button type="button" onclick="window.location.href='{{ url_for('dashboard') }}'" class="ml-2 text-gray-300 hover:text-white transition-colors duration-200 p-1 hover:bg-gray-600 rounded-full" title="Reset Filter">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    <div id="mapLoadingIndicator" class="hidden flex items-center space-x-2">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                    </button>
-                    {% endif %}
+                        <span class="text-white text-sm">Memuat data...</span>
+                    </div>
+                </div>
+                
+                <!-- K-Medoids Parameters Form -->
+                <form method="GET" action="{{ url_for('dashboard') }}" id="mapFilterForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="flex items-center bg-gray-700 rounded-lg p-2">
+                        <label for="year_filter_map" class="text-white mr-3 text-sm font-medium">Tahun:</label>
+                        <select name="year_map" id="year_filter_map" class="bg-gray-600 text-white border border-gray-500 rounded-md py-1.5 px-4 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 hover:bg-gray-500 flex-1">
+                            <option value="all" {% if selected_year_map == 'all' or selected_year_map is none %}selected{% endif %}>Semua Tahun</option>
+                            {% for year in available_years %}
+                            <option value="{{ year }}" {% if selected_year_map == year|string %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="flex items-center bg-gray-700 rounded-lg p-2">
+                        <label for="k_clusters" class="text-white mr-3 text-sm font-medium">Jumlah Klaster (k):</label>
+                        <input type="number" id="k_clusters" name="k" value="{{ k_clusters }}" min="2" max="10" class="bg-gray-600 text-white border border-gray-500 rounded-md py-1.5 px-4 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 hover:bg-gray-500 flex-1" required>
+                    </div>
+
+                    <div class="flex items-center bg-gray-700 rounded-lg p-2">
+                        <label for="max_iter" class="text-white mr-3 text-sm font-medium">Iterasi Maks:</label>
+                        <input type="number" id="max_iter" name="max_iter" value="{{ max_iterations }}" min="10" max="1000" class="bg-gray-600 text-white border border-gray-500 rounded-md py-1.5 px-4 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 hover:bg-gray-500 flex-1" required>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex-1">
+                            Terapkan Filter
+                        </button>
+                        {% if selected_year_map and selected_year_map != 'all' %}
+                        <a href="{{ url_for('dashboard') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                            Reset
+                        </a>
+                        {% endif %}
+                    </div>
                 </form>
             </div>
         </div>
+
         <div class="p-4" id="mapContainer">
             {% if map_html %}
                 <div class="rounded-lg overflow-hidden border border-gray-200">
@@ -246,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => response.json())
-        .then(data => {
+        .then data => {
             if (data.success) {
                 // Show success message
                 showNotification('Data dashboard berhasil diperbarui!', 'success');

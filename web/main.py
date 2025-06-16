@@ -515,19 +515,23 @@ def check_credentials(username, password):
     return username == 'admin' and password == 'admin'
 
 # Route untuk dashboard utama
-@app.route('/')
+@app.route('/dashboard')
 @login_required
 def dashboard():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     
     try:
-        # Get available years for the filter
+        # Get available years for filter
         cursor.execute("SELECT DISTINCT tahun FROM kecelakaan ORDER BY tahun DESC")
         available_years = [str(row['tahun']) for row in cursor.fetchall()]
         
         # Get selected year from query parameter
         selected_year_map = request.args.get('year_map', 'all')
+        
+        # Get k-medoids parameters from query parameters
+        k_clusters = int(request.args.get('k', 3))
+        max_iterations = int(request.args.get('max_iter', 100))
         
         # Total kecelakaan
         cursor.execute("SELECT SUM(jumlah_kecelakaan) as total FROM kecelakaan")
@@ -543,7 +547,7 @@ def dashboard():
             FROM gampong g
             JOIN kecelakaan k ON g.id = k.gampong_id
             WHERE k.jumlah_kecelakaan > 10 
-        """) # Angka 10 bisa disesuaikan
+        """)
         gampong_rawan = cursor.fetchone()['total'] or 0
 
         # Data untuk chart ringkasan kecelakaan (misal: total per tahun)
@@ -557,62 +561,32 @@ def dashboard():
         kecelakaan_summary_labels = [str(r['tahun']) for r in kecelakaan_summary_raw]
         kecelakaan_summary_data = [int(r['total_per_tahun']) for r in kecelakaan_summary_raw]
 
-        # Data untuk chart ringkasan korban (Meninggal, Luka Berat, Luka Ringan)
-        # Check if new columns exist first
-        cursor.execute("SHOW COLUMNS FROM korban LIKE 'luka_berat'")
-        has_luka_berat = cursor.fetchone() is not None
-        
-        cursor.execute("SHOW COLUMNS FROM korban LIKE 'luka_ringan'")
-        has_luka_ringan = cursor.fetchone() is not None
-        
-        if has_luka_berat and has_luka_ringan:
-            # Use new columns if they exist
-            cursor.execute("""
-                SELECT
-                    SUM(jumlah_meninggal) as total_meninggal,
-                    SUM(COALESCE(luka_berat, 0)) as total_luka_berat,
-                    SUM(COALESCE(luka_ringan, 0)) as total_luka_ringan
-                FROM korban
-            """)
-            korban_summary_raw = cursor.fetchone()
-            korban_summary_labels = ['Meninggal', 'Luka Berat', 'Luka Ringan']
-            korban_summary_data = [
-                int(korban_summary_raw['total_meninggal'] or 0),
-                int(korban_summary_raw['total_luka_berat'] or 0),
-                int(korban_summary_raw['total_luka_ringan'] or 0)
-            ]
-        else:
-            # Fallback to old structure with sample data
-            cursor.execute("""
-                SELECT
-                    SUM(jumlah_meninggal) as total_meninggal
-                FROM korban
-            """)
-            korban_summary_raw = cursor.fetchone()
-            total_meninggal = int(korban_summary_raw['total_meninggal'] or 0)
-            
-            # Data untuk chart ringkasan korban
-            korban_summary_labels = ['Meninggal']
-            korban_summary_data = [total_meninggal]
-        
-        # Ambil data gabungan untuk peta klaster di dashboard
-        df_combined = get_combined_data() # Tanpa filter untuk dashboard
-        
+        # Data untuk chart ringkasan korban
+        cursor.execute("""
+            SELECT SUM(jumlah_meninggal) as total_meninggal
+            FROM korban
+        """)
+        korban_summary_raw = cursor.fetchone()
+        korban_summary_labels = ['Meninggal']
+        korban_summary_data = [int(korban_summary_raw['total_meninggal'] or 0)]
+
+        # Ambil data gabungan untuk peta klaster
+        df_combined = get_combined_data()
+
         map_html = None
         if not df_combined.empty:
             try:
-                # Pastikan kolom 'tahun' ada untuk proses_data_for_k_medoids
                 if 'tahun' not in df_combined.columns and 'kec.tahun' in df_combined.columns:
                     df_combined.rename(columns={'kec.tahun': 'tahun'}, inplace=True)
                 elif 'tahun' not in df_combined.columns:
                     df_combined['tahun'] = datetime.now().year
-                
+
                 # Apply year filter if specified
                 if selected_year_map and selected_year_map != 'all':
                     df_combined = df_combined[df_combined['tahun'].astype(str) == selected_year_map]
 
                 if not df_combined.empty:
-                    df_clustered, _ = process_data_for_k_medoids(df_combined.copy(), k=3)
+                    df_clustered, cluster_logs = process_data_for_k_medoids(df_combined.copy(), k=k_clusters, max_iter=max_iterations, log_progress=True)
                     cluster_map_obj = create_cluster_map_new(df_clustered)
                     map_html = cluster_map_obj._repr_html_() if cluster_map_obj else None
                 else:
@@ -626,11 +600,14 @@ def dashboard():
     except mysql.connector.Error as err:
         app.logger.error(f"Database error in dashboard: {err}")
         flash(f"Database error: {err}", "danger")
-        # Set default values on error
         total_kecelakaan, total_meninggal, gampong_rawan = 0, 0, 0
         kecelakaan_summary_labels, kecelakaan_summary_data = [], []
         korban_summary_labels, korban_summary_data = [], []
-        map_html = "<p>Error mengambil data dari database.</p>"
+        available_years = []
+        selected_year_map = 'all'
+        k_clusters = 3
+        max_iterations = 100
+        map_html = None
     finally:
         cursor.close()
         conn.close()
@@ -645,7 +622,9 @@ def dashboard():
         kecelakaan_summary_data=json.dumps(kecelakaan_summary_data),
         map_html=map_html,
         available_years=available_years,
-        selected_year_map=selected_year_map
+        selected_year_map=selected_year_map,
+        k_clusters=k_clusters,
+        max_iterations=max_iterations
     )
 
 # --- Chart Creation Functions (Adapted/New) ---
@@ -1515,128 +1494,102 @@ def public_dashboard():
     Public dashboard for citizens to view general data and graphs
     """
     try:
-        # Get year filter from query parameters
-        selected_year = request.args.get('year', 'all')
-        
+        # Get available years for filter
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         
-        # Get list of years for filter dropdown
         cursor.execute("SELECT DISTINCT tahun FROM kecelakaan ORDER BY tahun DESC")
-        years = [row['tahun'] for row in cursor.fetchall()]        # Build base query for accident data filtering
-        year_filter = ""
-        params = []
-        if selected_year and selected_year != 'all':
-            year_filter = " WHERE tahun = %s"
-            params.append(selected_year)
+        available_years = [str(row['tahun']) for row in cursor.fetchall()]
         
-        # Get accident summary data
+        # Get parameters from query string
+        selected_year_map = request.args.get('year_map', 'all')
+        k_clusters = int(request.args.get('k', 3))
+        max_iterations = int(request.args.get('max_iter', 100))
+        
+        # Total kecelakaan
+        cursor.execute("SELECT SUM(jumlah_kecelakaan) as total FROM kecelakaan")
+        total_kecelakaan = cursor.fetchone()['total'] or 0
+        
+        # Total korban meninggal
+        cursor.execute("SELECT SUM(jumlah_meninggal) as total FROM korban")
+        total_meninggal = cursor.fetchone()['total'] or 0
+        
+        # Data untuk chart ringkasan kecelakaan (misal: total per tahun)
         cursor.execute("""
-            SELECT 
-                COUNT(*) as total_accidents,
-                SUM(jumlah_kecelakaan) as total_count
-            FROM kecelakaan
-        """ + year_filter, params)
-        accident_summary = cursor.fetchone()
-        
-        # Get victim summary data
-        cursor.execute("""
-            SELECT
-                SUM(jumlah_meninggal) as total_deaths
-            FROM korban
-        """ + year_filter, params)
-        victim_summary = cursor.fetchone()
-        
-        # Combine summary data
-        summary = {
-            'total_accidents': accident_summary['total_count'] if accident_summary else 0,
-            'total_deaths': victim_summary['total_deaths'] if victim_summary else 0
-        }
-        
-        # Get accidents by year
-        cursor.execute("""
-            SELECT 
-                tahun, 
-                SUM(jumlah_kecelakaan) as total
+            SELECT tahun, SUM(jumlah_kecelakaan) as total_per_tahun
             FROM kecelakaan
             GROUP BY tahun
             ORDER BY tahun
         """)
-        accidents_by_year = cursor.fetchall()
-        
-        # Get victims by year
+        kecelakaan_summary_raw = cursor.fetchall()
+        kecelakaan_summary_labels = [str(r['tahun']) for r in kecelakaan_summary_raw]
+        kecelakaan_summary_data = [int(r['total_per_tahun']) for r in kecelakaan_summary_raw]
+
+        # Data untuk chart ringkasan korban
         cursor.execute("""
-            SELECT
-                tahun,
-                SUM(jumlah_meninggal) as deaths
+            SELECT SUM(jumlah_meninggal) as total_meninggal
             FROM korban
-            GROUP BY tahun
-            ORDER BY tahun
         """)
-        victims_by_year = cursor.fetchall()
-        
-        # Get vehicle types
-        cursor.execute("""
-            SELECT 
-                SUM(kendaraan_roda_dua) as roda_dua,
-                SUM(kendaraan_roda_4) as roda_empat,
-                SUM(kendaraan_lebih_roda_4) as lebih_roda_empat,
-                SUM(kendaraan_lainnya) as lainnya
-            FROM jenis_kendaraan
-        """ + year_filter, params)
-        vehicle_types = cursor.fetchone()        # Get high risk areas
-        if selected_year and selected_year != 'all':
-            cursor.execute("""
-                SELECT 
-                    g.nama_gampong,
-                    SUM(k.jumlah_kecelakaan) as accidents,
-                    SUM(korban.jumlah_meninggal) as deaths
-                FROM gampong g
-                JOIN kecelakaan k ON g.id = k.gampong_id
-                JOIN korban ON g.id = korban.gampong_id AND k.tahun = korban.tahun
-                WHERE k.tahun = %s
-                GROUP BY g.id, g.nama_gampong
-                ORDER BY accidents DESC
-                LIMIT 5
-            """, [selected_year])
+        korban_summary_raw = cursor.fetchone()
+        korban_summary_labels = ['Meninggal']
+        korban_summary_data = [int(korban_summary_raw['total_meninggal'] or 0)]
+
+        # Ambil data gabungan untuk peta klaster
+        df_combined = get_combined_data()
+
+        map_html = None
+        if not df_combined.empty:
+            try:
+                if 'tahun' not in df_combined.columns and 'kec.tahun' in df_combined.columns:
+                    df_combined.rename(columns={'kec.tahun': 'tahun'}, inplace=True)
+                elif 'tahun' not in df_combined.columns:
+                    df_combined['tahun'] = datetime.now().year
+
+                # Apply year filter if specified
+                if selected_year_map and selected_year_map != 'all':
+                    df_combined = df_combined[df_combined['tahun'].astype(str) == selected_year_map]
+
+                if not df_combined.empty:
+                    df_clustered, cluster_logs = process_data_for_k_medoids(df_combined.copy(), k=k_clusters, max_iter=max_iterations, log_progress=True)
+                    cluster_map_obj = create_cluster_map_new(df_clustered)
+                    map_html = cluster_map_obj._repr_html_() if cluster_map_obj else None
+                else:
+                    map_html = "<p>Tidak ada data untuk tahun yang dipilih.</p>"
+            except Exception as e:
+                app.logger.error(f"Error generating cluster map for public dashboard: {e}")
+                map_html = "<p>Error memuat peta klaster.</p>"
         else:
-            cursor.execute("""
-                SELECT 
-                    g.nama_gampong,
-                    SUM(k.jumlah_kecelakaan) as accidents,
-                    SUM(korban.jumlah_meninggal) as deaths
-                FROM gampong g
-                JOIN kecelakaan k ON g.id = k.gampong_id
-                JOIN korban ON g.id = korban.gampong_id AND k.tahun = korban.tahun
-                GROUP BY g.id, g.nama_gampong
-                ORDER BY accidents DESC
-                LIMIT 5
-            """)
-        high_risk_areas = cursor.fetchall()
-        
+            map_html = "<p>Tidak ada data untuk ditampilkan di peta.</p>"
+
+    except mysql.connector.Error as err:
+        app.logger.error(f"Database error in public dashboard: {err}")
+        total_kecelakaan, total_meninggal = 0, 0
+        kecelakaan_summary_labels, kecelakaan_summary_data = [], []
+        korban_summary_labels, korban_summary_data = [], []
+        available_years = []
+        selected_year_map = 'all'
+        k_clusters = 3
+        max_iterations = 100
+        map_html = None
+    finally:
         cursor.close()
         conn.close()
-        
-        return render_template('public_dashboard.html',
-                              years=years,
-                              summary=summary,
-                              accidents_by_year=accidents_by_year,
-                              victims_by_year=victims_by_year,
-                              vehicle_types=vehicle_types,
-                              high_risk_areas=high_risk_areas)
-                              
-    except Exception as e:
-        app.logger.error(f"Error in public dashboard: {e}")
-        return render_template('public_dashboard.html', 
-                              error=str(e),
-                              years=[],
-                              summary={},
-                              accidents_by_year=[],
-                              victims_by_year=[],
-                              vehicle_types={},
-                              high_risk_areas=[])
 
-# K-Medoids Simulation Page
+    return render_template('public_dashboard.html',
+        total_kecelakaan=total_kecelakaan,
+        total_meninggal=total_meninggal,
+        korban_summary_labels=json.dumps(korban_summary_labels),
+        korban_summary_data=json.dumps(korban_summary_data),
+        kecelakaan_summary_labels=json.dumps(kecelakaan_summary_labels),
+        kecelakaan_summary_data=json.dumps(kecelakaan_summary_data),
+        map_html=map_html,
+        available_years=available_years,
+        selected_year_map=selected_year_map,
+        k_clusters=k_clusters,
+        max_iterations=max_iterations
+    )
+
+# --- K-Medoids Simulation Page ---
 @app.route('/kmedoids')
 @login_required
 def kmedoids_page():
@@ -2099,201 +2052,6 @@ def reprocess_jenis_kecelakaan():
         
     except Exception as e:
         app.logger.error(f"Error in reprocess_jenis_kecelakaan: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# Route untuk halaman korban usia
-@app.route('/korban_usia')
-def korban_usia():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    try:
-        # Query untuk mengambil data korban berdasarkan tahun (karena tidak ada kolom usia)
-        query = """
-        SELECT
-            tahun,
-            SUM(jumlah_meninggal) as jumlah_korban
-        FROM korban
-        GROUP BY tahun
-        ORDER BY tahun
-        """
-        cursor.execute(query)
-        data_usia = cursor.fetchall()
-
-        # Query untuk statistik umum
-        cursor.execute("SELECT SUM(jumlah_meninggal) as total_korban FROM korban")
-        total_korban = cursor.fetchone()['total_korban'] or 0
-
-        # Query untuk rata-rata korban per tahun
-        cursor.execute("SELECT AVG(jumlah_meninggal) as rata_rata_usia FROM korban WHERE jumlah_meninggal IS NOT NULL")
-        rata_rata_usia = cursor.fetchone()['rata_rata_usia']
-        
-        return render_template('korban_usia.html', 
-                             data_usia=data_usia,
-                             total_korban=total_korban,
-                             rata_rata_usia=round(rata_rata_usia, 2) if rata_rata_usia else 0)
-    
-    except mysql.connector.Error as e:
-        app.logger.error(f"Database error in korban_usia route: {e}")
-        flash(f'Database error: {str(e)}', 'error')
-        return render_template('korban_usia.html', data_usia=[], total_korban=0, rata_rata_usia=0)
-    
-    finally:
-        cursor.close()
-        conn.close()
-
-# Route untuk halaman jenis kecelakaan
-@app.route('/jenis_kecelakaan')
-def jenis_kecelakaan():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    
-    try:
-        # Query untuk mengambil data kecelakaan per tahun (karena tidak ada kolom jenis_kecelakaan)
-        query = """
-        SELECT
-            tahun,
-            SUM(jumlah_kecelakaan) as jumlah_kecelakaan,
-            COUNT(DISTINCT k.id) as total_kejadian
-        FROM kecelakaan k
-        GROUP BY tahun
-        ORDER BY jumlah_kecelakaan DESC
-        """
-        cursor.execute(query)
-        data_jenis = cursor.fetchall()
-
-        # Query untuk total kecelakaan
-        cursor.execute("SELECT SUM(jumlah_kecelakaan) as total_kecelakaan FROM kecelakaan")
-        total_kecelakaan = cursor.fetchone()['total_kecelakaan'] or 0
-
-        # Query untuk tahun dengan kecelakaan terbanyak
-        cursor.execute("""
-        SELECT tahun, SUM(jumlah_kecelakaan) as jumlah
-        FROM kecelakaan
-        GROUP BY tahun
-        ORDER BY jumlah DESC
-        LIMIT 1
-        """)
-        jenis_terbanyak = cursor.fetchone()
-        
-        return render_template('jenis_kecelakaan.html', 
-                             data_jenis=data_jenis,
-                             total_kecelakaan=total_kecelakaan,
-                             jenis_terbanyak=jenis_terbanyak)
-    
-    except mysql.connector.Error as e:
-        app.logger.error(f"Database error in jenis_kecelakaan route: {e}")
-        flash(f'Database error: {str(e)}', 'error')
-        return render_template('jenis_kecelakaan.html', data_jenis=[], total_kecelakaan=0, jenis_terbanyak=None)
-    
-    finally:
-        cursor.close()
-        conn.close()
-
-# API endpoint untuk reprocess data peta dengan kluster K-medoids
-@app.route('/api/reprocess_peta', methods=['POST'])
-@login_required
-def reprocess_peta():
-    """API endpoint to reprocess map data with K-medoids clustering"""
-    try:
-        # Get combined data for clustering
-        df_combined = get_combined_data()
-        
-        if df_combined.empty:
-            return jsonify({'success': False, 'error': 'Tidak ada data untuk diproses'}), 404
-        
-        # Process data with K-medoids clustering
-        df_clustered, cluster_info = process_data_for_k_medoids(df_combined.copy(), k=3)
-        
-        # Get cluster statistics
-        cluster_stats = {
-            'total_data': len(df_clustered),
-            'clusters': {}
-        }
-        
-        for cluster_id in df_clustered['cluster'].unique():
-            cluster_data = df_clustered[df_clustered['cluster'] == cluster_id]
-            cluster_stats['clusters'][cluster_id] = {
-                'count': len(cluster_data),
-                'avg_accidents': cluster_data['jumlah_kecelakaan'].mean(),
-                'avg_victims': cluster_data['jumlah_meninggal'].mean()
-            }
-        
-        return jsonify({
-            'success': True,
-            'message': 'Data peta dan kluster berhasil diperbarui',
-            'stats': cluster_stats,
-            'cluster_info': cluster_info
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error in reprocess_peta: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# API endpoint untuk reprocess data detail gampong individu
-@app.route('/api/reprocess_detail/<gampong_nama>', methods=['POST'])
-@login_required
-def reprocess_detail(gampong_nama):
-    """API endpoint to reprocess individual gampong detail data"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
-        # Get gampong info
-        cursor.execute("SELECT * FROM gampong WHERE nama_gampong = %s", (gampong_nama,))
-        gampong_info = cursor.fetchone()
-        
-        if not gampong_info:
-            return jsonify({'success': False, 'error': 'Gampong tidak ditemukan'}), 404
-        
-        gampong_id = gampong_info['id']
-        
-        # Recalculate statistics for this gampong
-        detail_stats = {}
-        
-        # Total kecelakaan
-        cursor.execute("SELECT COUNT(*) as total FROM kecelakaan WHERE gampong_id = %s", (gampong_id,))
-        detail_stats['total_kecelakaan'] = cursor.fetchone()['total']
-        
-        # Total korban meninggal
-        cursor.execute("""
-        SELECT
-            COALESCE(SUM(jumlah_meninggal), 0) as total_korban
-        FROM korban WHERE gampong_id = %s
-        """, (gampong_id,))
-        detail_stats['total_korban'] = cursor.fetchone()['total_korban']
-        
-        # Kecelakaan per tahun
-        cursor.execute("""
-        SELECT tahun, COUNT(*) as jumlah 
-        FROM kecelakaan 
-        WHERE gampong_id = %s 
-        GROUP BY tahun 
-        ORDER BY tahun
-        """, (gampong_id,))
-        detail_stats['yearly_accidents'] = cursor.fetchall()
-        
-        # Kecelakaan per tahun untuk gampong ini
-        cursor.execute("""
-        SELECT tahun, SUM(jumlah_kecelakaan) as jumlah
-        FROM kecelakaan
-        WHERE gampong_id = %s
-        GROUP BY tahun
-        ORDER BY jumlah DESC
-        """, (gampong_id,))
-        detail_stats['accident_by_year'] = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Data detail untuk {gampong_nama} berhasil diperbarui',
-            'data': detail_stats
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error in reprocess_detail: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
     
 
