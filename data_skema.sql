@@ -85,6 +85,8 @@ CREATE TABLE IF NOT EXISTS `korban` (
   `gampong_id` int NOT NULL,
   `jumlah_meninggal` int DEFAULT NULL,
   `tahun` int DEFAULT NULL,
+  `luka_berat` int DEFAULT NULL,
+  `luka_ringan` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `gampong_id` (`gampong_id`),
   CONSTRAINT `korban_ibfk_1` FOREIGN KEY (`gampong_id`) REFERENCES `gampong` (`id`) ON DELETE CASCADE

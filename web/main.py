@@ -193,8 +193,7 @@ def process_data_for_k_medoids(df_combined, k=3, max_iter=100, columns_to_use=No
         medoids: numpy array of medoid data points
         logs: list of log messages (if log_progress=True)
         iterations: list of iteration data (if log_progress=True)
-    """
-    # Default columns for clustering
+    """    # Default columns for clustering
     if columns_to_use is None:
         columns_to_use = [
             'jumlah_kecelakaan', 'jumlah_meninggal', 'luka_berat', 'luka_ringan',
@@ -270,11 +269,11 @@ def process_data_for_k_medoids(df_combined, k=3, max_iter=100, columns_to_use=No
         
     return df_combined, medoids
 
-# Fungsi untuk klasifikasi tingkat keparahan (bisa disesuaikan)
+# Fungsi untuk klasifikasi tingkat keparahan (disesuaikan dengan kategori korban baru)
 def classify_severity(value):
-    if value < 5: return 'Aman'       # Contoh threshold baru
-    elif value < 10: return 'Waspada'
-    elif value < 15: return 'Siaga'
+    if value < 8: return 'Aman'       # Threshold yang disesuaikan dengan luka berat/ringan
+    elif value < 15: return 'Waspada'
+    elif value < 25: return 'Siaga'
     else: return 'Awas'
 
 # Fungsi untuk mendapatkan koordinat gampong dari DB
@@ -335,8 +334,7 @@ def create_cluster_map_new(df_clustered):
 
             cluster_id = int(row.get('cluster', 0))
             color = colors[cluster_id % len(colors)]
-            
-            # Hitung total kasus untuk popup dan radius (contoh)
+              # Hitung total kasus untuk popup dan radius (contoh)
             total_kasus = row.get('jumlah_kecelakaan', 0)
             total_meninggal = row.get('jumlah_meninggal', 0)
             total_luka_berat = row.get('luka_berat', 0)
@@ -681,32 +679,13 @@ def statistik_korban():
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
-    # Cek apakah kolom usia ada di tabel korban
-    cursor.execute("SHOW COLUMNS FROM korban LIKE 'usia'")
-    has_usia = cursor.fetchone() is not None
-    if has_usia:
-        cursor.execute("""
-            SELECT
-                SUM(CASE WHEN usia < 15 THEN jumlah_meninggal ELSE 0 END) as usia_0_14,
-                SUM(CASE WHEN usia BETWEEN 15 AND 24 THEN jumlah_meninggal ELSE 0 END) as usia_15_24,
-                SUM(CASE WHEN usia BETWEEN 25 AND 44 THEN jumlah_meninggal ELSE 0 END) as usia_25_44,
-                SUM(CASE WHEN usia BETWEEN 45 AND 64 THEN jumlah_meninggal ELSE 0 END) as usia_45_64,
-                SUM(CASE WHEN usia >= 65 THEN jumlah_meninggal ELSE 0 END) as usia_65_plus
-            FROM korban
-            WHERE usia IS NOT NULL
-        """)
-        usia_row = cursor.fetchone()
-        usia_labels = ['< 15', '15-24', '25-44', '45-64', '65+']
-        usia_values = [usia_row['usia_0_14'] or 0, usia_row['usia_15_24'] or 0, usia_row['usia_25_44'] or 0, usia_row['usia_45_64'] or 0, usia_row['usia_65_plus'] or 0]
-    else:
-        usia_labels = ['< 15', '15-24', '25-44', '45-64', '65+']
-        usia_values = [0, 0, 0, 0, 0]
-    pie_chart_korban_usia = create_pie_chart_summary(usia_labels, usia_values, "Distribusi Korban Meninggal per Kategori Usia")
-
-    # Data korban per tahun (hanya jumlah_meninggal)
+    # Data korban per tahun (semua kategori korban)
     cursor.execute("""
         SELECT tahun,
-               SUM(jumlah_meninggal) as total_korban
+               SUM(jumlah_meninggal) as total_meninggal,
+               SUM(luka_berat) as total_luka_berat,
+               SUM(luka_ringan) as total_luka_ringan,
+               SUM(jumlah_meninggal + luka_berat + luka_ringan) as total_korban
         FROM korban
         GROUP BY tahun
         ORDER BY tahun
@@ -714,11 +693,12 @@ def statistik_korban():
     korban_tahun_data = cursor.fetchall()
     korban_tahun_labels = [str(r['tahun']) for r in korban_tahun_data]
     korban_tahun_values = [r['total_korban'] for r in korban_tahun_data]
-    line_chart_korban_tahun = create_bar_chart_summary(korban_tahun_labels, korban_tahun_values, "Total Korban Meninggal per Tahun", "Jumlah Korban")
+    line_chart_korban_tahun = create_bar_chart_summary(korban_tahun_labels, korban_tahun_values, "Total Korban per Tahun", "Jumlah Korban")
 
-    # Statistik tambahan: Top 10 korban per gampong
+    # Statistik tambahan: Top 10 total korban per gampong
     cursor.execute("""
-        SELECT g.nama_gampong, SUM(k.jumlah_meninggal) as total_korban
+        SELECT g.nama_gampong, 
+               SUM(k.jumlah_meninggal + k.luka_berat + k.luka_ringan) as total_korban
         FROM korban k
         JOIN gampong g ON k.gampong_id = g.id
         GROUP BY g.nama_gampong
@@ -728,7 +708,23 @@ def statistik_korban():
     korban_gampong_data = cursor.fetchall()
     korban_gampong_labels = [r['nama_gampong'] for r in korban_gampong_data]
     korban_gampong_values = [r['total_korban'] for r in korban_gampong_data]
-    bar_chart_korban_gampong = create_bar_chart_summary(korban_gampong_labels, korban_gampong_values, "Top 10 Korban Meninggal per Gampong", "Jumlah Korban")
+    bar_chart_korban_gampong = create_bar_chart_summary(korban_gampong_labels, korban_gampong_values, "Top 10 Total Korban per Gampong", "Jumlah Korban")
+
+    # Chart untuk distribusi kategori korban (meninggal, luka berat, luka ringan)
+    cursor.execute("""
+        SELECT SUM(jumlah_meninggal) as total_meninggal,
+               SUM(luka_berat) as total_luka_berat,
+               SUM(luka_ringan) as total_luka_ringan
+        FROM korban
+    """)
+    kategori_korban_row = cursor.fetchone()
+    kategori_korban_labels = ["Meninggal", "Luka Berat", "Luka Ringan"]
+    kategori_korban_values = [
+        int(kategori_korban_row['total_meninggal'] or 0),
+        int(kategori_korban_row['total_luka_berat'] or 0),
+        int(kategori_korban_row['total_luka_ringan'] or 0)
+    ]
+    pie_chart_kategori_korban = create_pie_chart_summary(kategori_korban_labels, kategori_korban_values, "Distribusi Kategori Korban")
 
     # Statistik tambahan: Korban per jenis kendaraan (join dengan jenis_kendaraan)
     cursor.execute("""
@@ -767,12 +763,11 @@ def statistik_korban():
     pie_chart_korban_jalan = create_pie_chart_summary(korban_jalan_labels, korban_jalan_values, "Distribusi Korban per Kondisi Jalan")
 
     cursor.close()
-    conn.close()
-
+    conn.close()    
     return render_template('statistik_korban.html',
-                           pie_chart_korban_usia=pie_chart_korban_usia,
                            line_chart_korban_tahun=line_chart_korban_tahun,
                            bar_chart_korban_gampong=bar_chart_korban_gampong,
+                           pie_chart_kategori_korban=pie_chart_kategori_korban,
                            pie_chart_korban_kendaraan=pie_chart_korban_kendaraan,
                            pie_chart_korban_jalan=pie_chart_korban_jalan)
 
@@ -1148,24 +1143,42 @@ def delete_kecelakaan(id):
 # Ini akan membuat file sangat panjang, jadi saya hanya contohkan gampong dan kecelakaan.
 # Polanya akan sama: add (INSERT), edit (UPDATE by ID), delete (DELETE by ID).
 
-# Korban CRUD
 @app.route('/data/korban/add', methods=['POST'])
 @login_required
 def add_korban():
     if request.method == 'POST':
         try:
             gampong_id = request.form['gampong_id']
-            jumlah_meninggal = request.form['jumlah_meninggal']
+            jumlah_meninggal = request.form.get('jumlah_meninggal', 0)
+            luka_berat = request.form.get('luka_berat', 0)
+            luka_ringan = request.form.get('luka_ringan', 0)
             tahun = request.form['tahun']
             
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("""INSERT INTO korban (gampong_id, jumlah_meninggal, tahun)
-                              VALUES (%s, %s, %s)""",
-                           (gampong_id, jumlah_meninggal, tahun))
+            
+            # Check if luka_berat and luka_ringan columns exist
+            cursor.execute("SHOW COLUMNS FROM korban LIKE 'luka_berat'")
+            has_luka_berat = cursor.fetchone() is not None
+            
+            if has_luka_berat:
+                cursor.execute("""INSERT INTO korban (gampong_id, jumlah_meninggal, luka_berat, luka_ringan, tahun)
+                                  VALUES (%s, %s, %s, %s, %s)""",
+                               (gampong_id, jumlah_meninggal, luka_berat, luka_ringan, tahun))
+            else:
+                cursor.execute("""INSERT INTO korban (gampong_id, jumlah_meninggal, tahun)
+                                  VALUES (%s, %s, %s)""",
+                               (gampong_id, jumlah_meninggal, tahun))            
             conn.commit()
+            
+            # Check if it's an AJAX request
+            if request.headers.get('Content-Type') == 'application/x-www-form-urlencoded' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'message': 'Data Korban berhasil ditambahkan!'})
+            
             flash('Data Korban berhasil ditambahkan!', 'success')
         except Exception as e:
+            if request.headers.get('Content-Type') == 'application/x-www-form-urlencoded' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': f'Error: {str(e)}'})
             flash(f'Error: {str(e)}', 'danger')
         finally:
             if conn.is_connected():
@@ -1179,16 +1192,37 @@ def edit_korban(id):
     if request.method == 'POST':
         try:
             gampong_id = request.form['gampong_id']
-            jumlah_meninggal = request.form['jumlah_meninggal']
+            jumlah_meninggal = request.form.get('jumlah_meninggal', 0)
+            luka_berat = request.form.get('luka_berat', 0)
+            luka_ringan = request.form.get('luka_ringan', 0)
             tahun = request.form['tahun']
+            
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("""UPDATE korban SET gampong_id = %s, jumlah_meninggal = %s, tahun = %s
-                              WHERE id = %s""",
-                           (gampong_id, jumlah_meninggal, tahun, id))
+            
+            # Check if luka_berat and luka_ringan columns exist
+            cursor.execute("SHOW COLUMNS FROM korban LIKE 'luka_berat'")
+            has_luka_berat = cursor.fetchone() is not None
+            
+            if has_luka_berat:
+                cursor.execute("""UPDATE korban SET gampong_id = %s, jumlah_meninggal = %s, 
+                                  luka_berat = %s, luka_ringan = %s, tahun = %s
+                                  WHERE id = %s""",
+                               (gampong_id, jumlah_meninggal, luka_berat, luka_ringan, tahun, id))
+            else:
+                cursor.execute("""UPDATE korban SET gampong_id = %s, jumlah_meninggal = %s, tahun = %s
+                                  WHERE id = %s""",
+                               (gampong_id, jumlah_meninggal, tahun, id))            
             conn.commit()
+            
+            # Check if it's an AJAX request
+            if request.headers.get('Content-Type') == 'application/x-www-form-urlencoded' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': True, 'message': 'Data Korban berhasil diperbarui!'})
+            
             flash('Data Korban berhasil diperbarui!', 'success')
         except Exception as e:
+            if request.headers.get('Content-Type') == 'application/x-www-form-urlencoded' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': f'Error: {str(e)}'})
             flash(f'Error: {str(e)}', 'danger')
         finally:
             if conn.is_connected():
@@ -1601,11 +1635,10 @@ def public_dashboard():
         gampong_data = cursor.fetchall()
         gampong_labels = [r['nama_gampong'] for r in gampong_data]
         gampong_values = [r['total_kecelakaan'] for r in gampong_data]
-        bar_chart_kecelakaan_gampong = create_bar_chart_summary(gampong_labels, gampong_values, "Total Kecelakaan per Gampong (Top 15)", "Jumlah Kecelakaan")
-
-        # Statistik korban per tahun
+        bar_chart_kecelakaan_gampong = create_bar_chart_summary(gampong_labels, gampong_values, "Total Kecelakaan per Gampong (Top 15)", "Jumlah Kecelakaan")        # Statistik korban per tahun (semua kategori)
         cursor.execute("""
-            SELECT tahun, SUM(jumlah_meninggal) as total_korban
+            SELECT tahun, 
+                   SUM(jumlah_meninggal + luka_berat + luka_ringan) as total_korban
             FROM korban
             GROUP BY tahun
             ORDER BY tahun
@@ -1613,11 +1646,12 @@ def public_dashboard():
         korban_tahun_data = cursor.fetchall()
         korban_tahun_labels = [str(r['tahun']) for r in korban_tahun_data]
         korban_tahun_values = [r['total_korban'] for r in korban_tahun_data]
-        line_chart_korban_tahun = create_bar_chart_summary(korban_tahun_labels, korban_tahun_values, "Total Korban Meninggal per Tahun", "Jumlah Korban")
+        line_chart_korban_tahun = create_bar_chart_summary(korban_tahun_labels, korban_tahun_values, "Total Korban per Tahun", "Jumlah Korban")
 
         # Statistik korban per gampong (Top 10)
         cursor.execute("""
-            SELECT g.nama_gampong, SUM(k.jumlah_meninggal) as total_korban
+            SELECT g.nama_gampong, 
+                   SUM(k.jumlah_meninggal + k.luka_berat + k.luka_ringan) as total_korban
             FROM korban k
             JOIN gampong g ON k.gampong_id = g.id
             GROUP BY g.nama_gampong
@@ -1627,7 +1661,7 @@ def public_dashboard():
         korban_gampong_data = cursor.fetchall()
         korban_gampong_labels = [r['nama_gampong'] for r in korban_gampong_data]
         korban_gampong_values = [r['total_korban'] for r in korban_gampong_data]
-        bar_chart_korban_gampong = create_bar_chart_summary(korban_gampong_labels, korban_gampong_values, "Top 10 Korban Meninggal per Gampong", "Jumlah Korban")
+        bar_chart_korban_gampong = create_bar_chart_summary(korban_gampong_labels, korban_gampong_values, "Top 10 Total Korban per Gampong", "Jumlah Korban")
 
         # Statistik korban per jenis kendaraan
         cursor.execute("""
