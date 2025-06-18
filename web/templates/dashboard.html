@@ -35,24 +35,6 @@
             </div>
         </div>
 
-        <!-- Total Korban Meninggal -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-xl animate-fade-in delay-100">
-            <div class="bg-gradient-to-r from-blue-500 to-cyan-600 p-6">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-white text-opacity-80">Total Korban Meninggal</p>
-                        <h2 class="text-3xl font-bold text-white">{{ total_meninggal }}</h2>
-                    </div>
-                    <div class="text-white text-opacity-80">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                    </div>
-                </div>
-                <p class="mt-2 text-sm text-white text-opacity-80">Seluruh Periode Data</p>
-            </div>
-        </div>
-
         <!-- Gampong Rawan -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-xl animate-fade-in delay-200">
             <div class="bg-gradient-to-r from-red-500 to-pink-600 p-6">
@@ -74,13 +56,13 @@
 
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Jenis Kecelakaan Chart -->
+        <!-- Jenis Kendaraan Chart -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up">
             <div class="bg-gray-800 p-4">
-                <h3 class="text-lg font-semibold text-white">Ringkasan Korban (Meninggal, Luka Berat, Luka Ringan)</h3>
+                <h3 class="text-lg font-semibold text-white">Distribusi Jenis Kendaraan Terlibat</h3>
             </div>
             <div class="p-4">
-                <canvas id="korbanSummaryChart" class="w-full h-80"></canvas>
+                <canvas id="jenisKendaraanChart" class="w-full h-80"></canvas>
             </div>
         </div>
 
@@ -312,34 +294,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Prepare data for charts - Use |safe filter as Flask already provides JSON string
-    let korbanSummaryLabels, korbanSummaryData, kecelakaanTahunLabels, kecelakaanTahunData;
+    let jenisKendaraanLabels, jenisKendaraanData, kecelakaanTahunLabels, kecelakaanTahunData;
     try {
-        korbanSummaryLabels = JSON.parse('{{ korban_summary_labels|safe }}');
-        korbanSummaryData = JSON.parse('{{ korban_summary_data|safe }}');
+        jenisKendaraanLabels = JSON.parse('{{ jenis_kendaraan_labels|safe }}');
+        jenisKendaraanData = JSON.parse('{{ jenis_kendaraan_data|safe }}');
         kecelakaanTahunLabels = JSON.parse('{{ kecelakaan_summary_labels|safe }}');
         kecelakaanTahunData = JSON.parse('{{ kecelakaan_summary_data|safe }}');
     } catch (e) {
         console.error("Error parsing chart data from Flask:", e);
-        // Set to empty arrays to prevent further errors
-        korbanSummaryLabels = []; korbanSummaryData = []; kecelakaanTahunLabels = []; kecelakaanTahunData = [];
+        jenisKendaraanLabels = []; jenisKendaraanData = []; kecelakaanTahunLabels = []; kecelakaanTahunData = [];
     }
 
-    // Chart for Korban Summary (Pie Chart)
-    const korbanChartContainer = document.getElementById('korbanSummaryChart');
-    if (korbanChartContainer) {
-        // Check if data is valid and non-empty before creating chart
-        if (korbanSummaryLabels && korbanSummaryLabels.length > 0 && korbanSummaryData && korbanSummaryData.length > 0 && korbanSummaryData.some(d => d > 0)) {
-            const korbanCtx = korbanChartContainer.getContext('2d');
-            new Chart(korbanCtx, {
+    // Chart for Jenis Kendaraan (Pie Chart)
+    const jenisKendaraanChartContainer = document.getElementById('jenisKendaraanChart');
+    if (jenisKendaraanChartContainer) {
+        if (jenisKendaraanLabels && jenisKendaraanLabels.length > 0 && jenisKendaraanData && jenisKendaraanData.length > 0 && jenisKendaraanData.some(d => d > 0)) {
+            const ctx = jenisKendaraanChartContainer.getContext('2d');
+            new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: korbanSummaryLabels,
+                    labels: jenisKendaraanLabels,
                     datasets: [{
-                        data: korbanSummaryData,
+                        data: jenisKendaraanData,
                         backgroundColor: [
-                            '#FF6384', // Meninggal
-                            '#FFCE56', // Luka Berat
-                            '#36A2EB'  // Luka Ringan
+                            '#FF6384', // Roda 2
+                            '#36A2EB', // Roda 4
+                            '#FFCE56', // > Roda 4
+                            '#4BC0C0'  // Lainnya
                         ],
                         borderWidth: 1
                     }]
@@ -353,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         },
                         title: {
                             display: true,
-                            text: 'Distribusi Korban'
+                            text: 'Distribusi Jenis Kendaraan Terlibat'
                         }
                     },
                     animation: {
@@ -363,8 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         } else {
-            // Display a message if no data
-            korbanChartContainer.parentElement.innerHTML = '<p class="text-center text-gray-500 py-10">Tidak ada data ringkasan korban untuk ditampilkan.</p>';
+            jenisKendaraanChartContainer.parentElement.innerHTML = '<p class="text-center text-gray-500 py-10">Tidak ada data jenis kendaraan untuk ditampilkan.</p>';
         }
     }
 

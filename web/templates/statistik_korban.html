@@ -5,8 +5,13 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">    <!-- Header -->
     <div class="mb-8 text-center">
+<<<<<<< HEAD
+        <h1 class="text-3xl font-bold text-gray-800">Statistik Korban Kecelakaan</h1>
+        <p class="text-gray-600">Analisis data korban meninggal berdasarkan periode waktu dan faktor lain.</p>
+=======
         <h1 class="text-3xl font-bold text-gray-800">Statistik Korban Meninggal</h1>
         <p class="text-gray-600">Analisis data korban meninggal pada kecelakaan lalu lintas.</p>
+>>>>>>> main
         <div class="mt-4">
             <button id="reprocessStatistikKorban" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
                 <svg class="inline-block w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,8 +20,56 @@
                 Perbarui Statistik Korban
             </button>
         </div>
+    </div>    <!-- Chart: Total Korban per Tahun & Top 10 Korban per Gampong (Grid 2 kolom) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Total Korban per Tahun</h2>
+            </div>
+            {% if line_chart_korban_tahun %}
+                <div class="h-96">{{ line_chart_korban_tahun|safe }}</div>
+            {% else %}
+                <p class="text-gray-500">Data tidak tersedia untuk chart ini.</p>
+            {% endif %}
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Top 10 Total Korban per Gampong</h2>
+            </div>
+            {% if bar_chart_korban_gampong %}
+                <div class="h-96">{{ bar_chart_korban_gampong|safe }}</div>
+            {% else %}
+                <p class="text-gray-500">Data tidak tersedia untuk chart ini.</p>
+            {% endif %}        </div>
+    </div>
+    
+    <!-- Chart: Distribusi Kategori Korban -->
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Distribusi Kategori Korban</h2>
+            </div>
+            {% if pie_chart_kategori_korban %}
+                <div class="h-96">{{ pie_chart_kategori_korban|safe }}</div>
+            {% else %}
+                <p class="text-gray-500">Data tidak tersedia untuk chart ini.</p>
+            {% endif %}
+        </div>
     </div>
 
+<<<<<<< HEAD
+    <!-- Chart: Distribusi Korban per Jenis Kendaraan & Kondisi Jalan (Grid 2 kolom) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Distribusi Korban per Jenis Kendaraan</h2>
+            </div>
+            {% if pie_chart_korban_kendaraan %}
+                <div class="h-96">{{ pie_chart_korban_kendaraan|safe }}</div>
+            {% else %}
+                <p class="text-gray-500">Data tidak tersedia untuk chart ini.</p>
+            {% endif %}
+=======
     <!-- Chart: Total Korban Meninggal -->
     <div class="bg-white rounded-xl shadow-md p-6 mb-8">
         <div class="flex justify-between items-center mb-4">
@@ -35,14 +88,18 @@
     <div class="bg-white rounded-xl shadow-md p-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold text-gray-800">Total Korban Meninggal per Tahun</h2>
+>>>>>>> main
         </div>
-        {% if line_chart_korban_tahun %}
-            <div class="h-96"> <!-- Adjust height as needed -->
-                {{ line_chart_korban_tahun|safe }}
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Distribusi Korban per Kondisi Jalan</h2>
             </div>
-        {% else %}
-            <p class="text-gray-500">Data tidak tersedia untuk chart ini.</p>
-        {% endif %}
+            {% if pie_chart_korban_jalan %}
+                <div class="h-96">{{ pie_chart_korban_jalan|safe }}</div>
+            {% else %}
+                <p class="text-gray-500">Data tidak tersedia untuk chart ini.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}

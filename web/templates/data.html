@@ -147,11 +147,16 @@
                 <div class="p-6">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200" id="korbanTable">
-                            <thead class="bg-gray-50">
-                                <tr>
+                            <thead class="bg-gray-50">                                <tr>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gampong</th>
+<<<<<<< HEAD
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meninggal</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Berat</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Luka Ringan</th>
+=======
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Meninggal</th>
+>>>>>>> main
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tahun</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
@@ -160,15 +165,26 @@
                                 {% for item in korban_data %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.id }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.nama_gampong }}</td>                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                         {{ item.jumlah_meninggal }}
                                     </span>
                                 </td>
+<<<<<<< HEAD
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        {{ item.luka_berat or 0 }}
+                                    </span>
+                                </td>                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        {{ item.luka_ringan or 0 }}
+                                    </span>
+                                </td>
+=======
+>>>>>>> main
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.tahun }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <button onclick="openEditKorbanModal('{{ item.id }}', '{{ item.gampong_id }}', '{{ item.jumlah_meninggal }}', '{{ item.tahun }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
+                                    <button onclick="openEditKorbanModal('{{ item.id }}', '{{ item.gampong_id }}', '{{ item.jumlah_meninggal }}', '{{ item.luka_berat or 0 }}', '{{ item.luka_ringan or 0 }}', '{{ item.tahun }}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-xs mr-2 transition-colors duration-200">
                                         <i class="fas fa-edit mr-1"></i>Edit
                                     </button>
                                     <form method="POST" action="{{ url_for('delete_korban', id=item.id) }}" style="display:inline;" onsubmit="return confirm('Yakin hapus data korban ID {{ item.id }}?');">
@@ -584,10 +600,16 @@
                     <select name="gampong_id" id="add_korban_gampong_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         {% for g in all_gampongs %}<option value="{{ g.id }}">{{ g.nama_gampong }}</option>{% endfor %}
                     </select>
-                </div>
-                <div>
+                </div>                <div>
                     <label for="add_jumlah_meninggal" class="block text-sm font-medium text-gray-700 text-left">Jumlah Meninggal</label>
                     <input type="number" name="jumlah_meninggal" id="add_jumlah_meninggal" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="add_luka_berat" class="block text-sm font-medium text-gray-700 text-left">Luka Berat</label>
+                    <input type="number" name="luka_berat" id="add_luka_berat" min="0" value="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>                <div>
+                    <label for="add_luka_ringan" class="block text-sm font-medium text-gray-700 text-left">Luka Ringan</label>
+                    <input type="number" name="luka_ringan" id="add_luka_ringan" min="0" value="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                 </div>
                 <div>
                     <label for="add_korban_tahun" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
@@ -612,10 +634,16 @@
                     <select name="gampong_id" id="edit_korban_gampong_id_field" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                         {% for g in all_gampongs %}<option value="{{ g.id }}">{{ g.nama_gampong }}</option>{% endfor %}
                     </select>
-                </div>
-                <div>
+                </div>                <div>
                     <label for="edit_jumlah_meninggal_field" class="block text-sm font-medium text-gray-700 text-left">Jumlah Meninggal</label>
                     <input type="number" name="jumlah_meninggal" id="edit_jumlah_meninggal_field" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label for="edit_luka_berat_field" class="block text-sm font-medium text-gray-700 text-left">Luka Berat</label>
+                    <input type="number" name="luka_berat" id="edit_luka_berat_field" min="0" value="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>                <div>
+                    <label for="edit_luka_ringan_field" class="block text-sm font-medium text-gray-700 text-left">Luka Ringan</label>
+                    <input type="number" name="luka_ringan" id="edit_luka_ringan_field" min="0" value="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                 </div>
                 <div>
                     <label for="edit_korban_tahun_field" class="block text-sm font-medium text-gray-700 text-left">Tahun</label>
@@ -871,11 +899,12 @@
         }
         document.getElementById('editKecelakaanForm').action = `/data/kecelakaan/edit/${id}`;
         openModal('editKecelakaanModal');
-    }
-      function openEditKorbanModal(id, gampong_id, meninggal, tahun) {
+    }    function openEditKorbanModal(id, gampong_id, meninggal, luka_berat, luka_ringan, tahun) {
         document.getElementById('edit_korban_id_field').value = id;
         document.getElementById('edit_korban_gampong_id_field').value = gampong_id;
         document.getElementById('edit_jumlah_meninggal_field').value = meninggal;
+        document.getElementById('edit_luka_berat_field').value = luka_berat;
+        document.getElementById('edit_luka_ringan_field').value = luka_ringan;
         document.getElementById('edit_korban_tahun_field').value = tahun;
         // Set selected option for gampong dropdown
         const gampongSelect = document.getElementById('edit_korban_gampong_id_field');
@@ -1306,13 +1335,133 @@
     }
 
     // Close modal when clicking outside
-    window.onclick = function(event) {
-        const modals = document.querySelectorAll('[id$="Modal"]');
+    window.onclick = function(event) {        const modals = document.querySelectorAll('[id$="Modal"]');
         modals.forEach(modal => {
             if (event.target == modal) {
                 modal.style.display = "none";
             }
         });
     }
+
+    // Handle form submissions with Sweet Alert
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle edit korban form submission
+        const editKorbanForm = document.getElementById('editKorbanForm');
+        if (editKorbanForm) {
+            editKorbanForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const actionUrl = this.action;
+                
+                fetch(actionUrl, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Data korban berhasil diperbarui',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            closeModal('editKorbanModal');
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Gagal memperbarui data korban',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Terjadi kesalahan: ' + error.message,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                });
+            });
+        }
+
+        // Handle add korban form submission
+        const addKorbanForm = document.querySelector('#addKorbanModal form');
+        if (addKorbanForm) {
+            addKorbanForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch('{{ url_for("add_korban") }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Data korban berhasil ditambahkan',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            closeModal('addKorbanModal');
+                            this.reset();
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Gagal menambahkan data korban',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Terjadi kesalahan: ' + error.message,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                });
+            });
+        }
+
+        // Show flash messages with Sweet Alert
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'success' %}
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: '{{ message }}',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        });
+                    {% elif category == 'danger' or category == 'error' %}
+                        Swal.fire({
+                            title: 'Error!',
+                            text: '{{ message }}',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    {% else %}
+                        Swal.fire({
+                            title: 'Informasi',
+                            text: '{{ message }}',
+                            icon: 'info',
+                            confirmButtonText: 'OK'
+                        });
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    });
 </script>
 {% endblock %}
