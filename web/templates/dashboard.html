@@ -13,10 +13,8 @@
                 Perbarui Data Dashboard
             </button>
         </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    </div>    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <!-- Total Kecelakaan -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-xl animate-fade-in">
             <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
@@ -28,6 +26,24 @@
                     <div class="text-white text-opacity-80">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="mt-2 text-sm text-white text-opacity-80">Seluruh Periode Data</p>
+            </div>
+        </div>
+
+        <!-- Total Korban (New) -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden transform transition-all hover:scale-105 hover:shadow-xl animate-fade-in">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-600 p-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-white text-opacity-80">Total Korban</p>
+                        <h2 class="text-3xl font-bold text-white">{{ total_korban }}</h2>
+                    </div>
+                    <div class="text-white text-opacity-80">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                     </div>
                 </div>
@@ -52,27 +68,73 @@
                 <p class="mt-2 text-sm text-white text-opacity-80">Jumlah Gampong > 10 Kasus</p>
             </div>
         </div>
-    </div>
-
-    <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <!-- Jenis Kendaraan Chart -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up">
-            <div class="bg-gray-800 p-4">
-                <h3 class="text-lg font-semibold text-white">Distribusi Jenis Kendaraan Terlibat</h3>
+    </div>    <!-- Charts Section -->
+    <div class="mb-8">
+        <!-- Data Kecelakaan Section -->
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Data Kecelakaan</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Jenis Kendaraan Chart (Pie Chart) -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up">
+                <div class="bg-indigo-700 p-4">
+                    <h3 class="text-lg font-semibold text-white">Distribusi Jenis Kendaraan Terlibat</h3>
+                </div>
+                <div class="p-4">
+                    {% if accidents_pie_chart %}
+                        {{ accidents_pie_chart|safe }}
+                    {% else %}
+                        <canvas id="jenisKendaraanChart" class="w-full h-80"></canvas>
+                    {% endif %}
+                </div>
             </div>
-            <div class="p-4">
-                <canvas id="jenisKendaraanChart" class="w-full h-80"></canvas>
+
+            <!-- Kecelakaan per Tahun Chart (Bar Chart) -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up delay-100">
+                <div class="bg-indigo-700 p-4">
+                    <h3 class="text-lg font-semibold text-white">Tren Kecelakaan per Tahun</h3>
+                </div>
+                <div class="p-4">
+                    {% if accidents_trend_chart %}
+                        {{ accidents_trend_chart|safe }}
+                    {% else %}
+                        <canvas id="kecelakaanTahunChart" class="w-full h-80"></canvas>
+                    {% endif %}
+                </div>
             </div>
         </div>
-
-        <!-- Kecelakaan per Tahun Chart -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up delay-100">
-            <div class="bg-gray-800 p-4">
-                <h3 class="text-lg font-semibold text-white">Total Kecelakaan per Tahun</h3>
+        
+        <!-- Data Korban Section -->
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Data Korban</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Jenis Korban Chart (Pie Chart) -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up">
+                <div class="bg-blue-700 p-4">
+                    <h3 class="text-lg font-semibold text-white">Distribusi Jenis Korban</h3>
+                </div>
+                <div class="p-4">
+                    {% if victims_pie_chart %}
+                        {{ victims_pie_chart|safe }}
+                    {% else %}
+                        <div id="jenisKorbanChart" class="w-full h-80">
+                            <p class="text-center py-8 text-gray-500">Data korban tidak tersedia</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-            <div class="p-4">
-                <canvas id="kecelakaanTahunChart" class="w-full h-80"></canvas>
+
+            <!-- Korban per Tahun Chart (Bar Chart) -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden animate-slide-up delay-100">
+                <div class="bg-blue-700 p-4">
+                    <h3 class="text-lg font-semibold text-white">Tren Korban per Tahun</h3>
+                </div>
+                <div class="p-4">
+                    {% if victims_trend_chart %}
+                        {{ victims_trend_chart|safe }}
+                    {% else %}
+                        <div id="korbanTahunChart" class="w-full h-80">
+                            <p class="text-center py-8 text-gray-500">Data korban tidak tersedia</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -283,18 +345,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 300);
         }, 3000);
-    }
-
-    // Prepare data for charts - Use |safe filter as Flask already provides JSON string
+    }    // Prepare data for charts - Use |safe filter as Flask already provides JSON string
     let jenisKendaraanLabels, jenisKendaraanData, kecelakaanTahunLabels, kecelakaanTahunData;
+    let jenisKorbanLabels, jenisKorbanData, korbanTahunLabels, korbanTahunData;
+    
     try {
+        // Kecelakaan data
         jenisKendaraanLabels = JSON.parse('{{ jenis_kendaraan_labels|safe }}');
         jenisKendaraanData = JSON.parse('{{ jenis_kendaraan_data|safe }}');
         kecelakaanTahunLabels = JSON.parse('{{ kecelakaan_summary_labels|safe }}');
         kecelakaanTahunData = JSON.parse('{{ kecelakaan_summary_data|safe }}');
+        
+        // Korban data
+        jenisKorbanLabels = JSON.parse('{{ jenis_korban_labels|safe }}');
+        jenisKorbanData = JSON.parse('{{ jenis_korban_data|safe }}');
+        korbanTahunLabels = JSON.parse('{{ korban_summary_labels|safe }}');
+        korbanTahunData = JSON.parse('{{ korban_summary_data|safe }}');
     } catch (e) {
         console.error("Error parsing chart data from Flask:", e);
         jenisKendaraanLabels = []; jenisKendaraanData = []; kecelakaanTahunLabels = []; kecelakaanTahunData = [];
+        jenisKorbanLabels = []; jenisKorbanData = []; korbanTahunLabels = []; korbanTahunData = [];
     }
 
     // Chart for Jenis Kendaraan (Pie Chart)
@@ -375,13 +445,97 @@ document.addEventListener('DOMContentLoaded', function() {
                     plugins: {
                         legend: { display: false },
                          title: { display: true, text: 'Jumlah Kecelakaan per Tahun' }
-                    },
-                    animation: { duration: 1500 }
+                    },                    animation: { duration: 1500 }
                 }
             });
         } else {
              // Display a message if no data
             kecelakaanChartContainer.parentElement.innerHTML = '<p class="text-center text-gray-500 py-10">Tidak ada data kecelakaan per tahun untuk ditampilkan.</p>';
+        }
+    }
+    
+    // Chart for Jenis Korban (Pie Chart)
+    const jenisKorbanChartContainer = document.getElementById('jenisKorbanChart');
+    if (jenisKorbanChartContainer && !document.querySelector('#victims_pie_chart')) {
+        if (jenisKorbanLabels && jenisKorbanLabels.length > 0 && jenisKorbanData && jenisKorbanData.length > 0 && jenisKorbanData.some(d => d > 0)) {
+            const ctx = jenisKorbanChartContainer.getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: jenisKorbanLabels,
+                    datasets: [{
+                        data: jenisKorbanData,
+                        backgroundColor: [
+                            '#FF6384',  // Meninggal
+                            '#FFCE56',  // Luka Berat
+                            '#36A2EB'   // Luka Ringan
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribusi Jenis Korban'
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            });
+        } else {
+            jenisKorbanChartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">Tidak ada data jenis korban untuk ditampilkan.</p>';
+        }
+    }
+
+    // Chart for Korban per Tahun (Bar Chart)
+    const korbanChartContainer = document.getElementById('korbanTahunChart');
+    if (korbanChartContainer && !document.querySelector('#victims_trend_chart')) {
+        if (korbanTahunLabels && korbanTahunLabels.length > 0 && korbanTahunData && korbanTahunData.length > 0) {
+            const korbanCtx = korbanChartContainer.getContext('2d');
+            new Chart(korbanCtx, {
+                type: 'bar',
+                data: {
+                    labels: korbanTahunLabels,
+                    datasets: [{
+                        label: 'Total Korban',
+                        data: korbanTahunData,
+                        backgroundColor: '#007BFF',  // Blue color
+                        borderColor: '#007BFF',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            title: { display: true, text: 'Tahun' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { drawBorder: false },
+                            title: { display: true, text: 'Jumlah Korban' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Jumlah Korban per Tahun' }
+                    },
+                    animation: { duration: 1500 }
+                }
+            });
+        } else {
+            korbanChartContainer.innerHTML = '<p class="text-center text-gray-500 py-10">Tidak ada data korban per tahun untuk ditampilkan.</p>';
         }
     }
 });
