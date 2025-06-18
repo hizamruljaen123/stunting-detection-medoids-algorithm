@@ -208,8 +208,18 @@ function updateMapDisplay() {
         const markerClusterGroup = L.markerClusterGroup(); // Re-initialize markerClusterGroup
         markers.forEach(marker => markerClusterGroup.addLayer(marker));
         clusterLayer.addLayer(markerClusterGroup);
+        // Tambahkan fitBounds agar zoom ke area marker
+        if (markers.length > 0) {
+            const group = L.featureGroup(markers);
+            map.fitBounds(group.getBounds(), { padding: [30, 30] });
+        }
     } else {
         markers.forEach(marker => clusterLayer.addLayer(marker));
+        // Tambahkan fitBounds untuk mode non-cluster
+        if (markers.length > 0) {
+            const group = L.featureGroup(markers);
+            map.fitBounds(group.getBounds(), { padding: [30, 30] });
+        }
     }
 }
 

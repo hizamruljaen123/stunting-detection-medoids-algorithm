@@ -482,7 +482,11 @@ function createClusterMap(inputData, results) {
     });
     
     clusterMap.addLayer(markers);
-      // Add legend
+    // Tambahkan fitBounds agar zoom ke area marker
+    if (markers.getLayers().length > 0) {
+        clusterMap.fitBounds(markers.getBounds(), { padding: [30, 30] });
+    }
+    // Add legend
     const legendDiv = document.getElementById('mapLegend');
     if (!legendDiv) {
         console.error('Element with id "mapLegend" not found');

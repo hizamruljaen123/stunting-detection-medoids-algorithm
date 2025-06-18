@@ -334,7 +334,10 @@ function createClusterMap(inputData, results) {
         markers.addLayer(marker);
     });
       clusterMap.addLayer(markers);
-    
+    // Tambahkan fitBounds agar zoom ke area marker
+    if (markers.getLayers().length > 0) {
+        clusterMap.fitBounds(markers.getBounds(), { padding: [30, 30] });
+    }
     // Add legend with year filter information
     const legendDiv = document.getElementById('mapLegend');
     if (!legendDiv) {

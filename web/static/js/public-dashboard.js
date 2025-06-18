@@ -108,10 +108,10 @@ document.addEventListener('DOMContentLoaded', function() {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
         
+        const markerList = [];
         locations.forEach(location => {
             const markerSize = Math.min(20, Math.max(10, location.count / 5));
-            
-            L.circleMarker([location.lat, location.lng], {
+            const marker = L.circleMarker([location.lat, location.lng], {
                 radius: markerSize,
                 fillColor: '#e53e3e',
                 color: 'white',
@@ -119,7 +119,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 opacity: 1,
                 fillOpacity: 0.8
             }).bindPopup(`<strong>${location.title}</strong><br>Jumlah Kecelakaan: ${location.count}`).addTo(map);
+            markerList.push(marker);
         });
+        // Tambahkan fitBounds agar zoom ke area marker
+        if (markerList.length > 0) {
+            const group = L.featureGroup(markerList);
+            map.fitBounds(group.getBounds(), { padding: [30, 30] });
+        }
     }
 
     // Create high risk area table
