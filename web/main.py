@@ -555,7 +555,7 @@ def dashboard():
         cursor.execute("""
             SELECT COUNT(DISTINCT gampong_id) as total
             FROM total_kecelakaan
-            WHERE jumlah_kecelakaan > 10 
+            WHERE jumlah_kecelakaan > 30 
         """)
         gampong_rawan = cursor.fetchone()['total'] or 0
 
@@ -960,15 +960,15 @@ def manage_data_page():
 
         # Data Kecelakaan
         cursor.execute("""
-            SELECT k.*, g.nama_gampong
-            FROM kecelakaan k JOIN gampong g ON k.gampong_id = g.id
-            ORDER BY g.nama_gampong, k.tahun DESC
+            SELECT * from total_kecelakaan
+            ORDER BY tahun DESC
         """)
         kecelakaan_data = cursor.fetchall()
 
         # Data Korban
         cursor.execute("""
-            SELECT ko.*, g.nama_gampong
+            SELECT ko.*, g.nama_gampong,
+                (COALESCE(ko.jumlah_meninggal,0) + COALESCE(ko.luka_berat,0) + COALESCE(ko.luka_ringan,0)) AS total_korban
             FROM korban ko JOIN gampong g ON ko.gampong_id = g.id
             ORDER BY g.nama_gampong, ko.tahun DESC
         """)
