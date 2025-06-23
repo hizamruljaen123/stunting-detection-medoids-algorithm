@@ -769,14 +769,13 @@
                 </div>
             </form>
         </div>
-    </div>
-
-    <!-- Edit Kondisi Jalan Modal -->
+    </div>    <!-- Edit Kondisi Jalan Modal -->
     <div id="editKondisiJalanModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <h3 class="text-lg leading-6 font-medium text-gray-900 text-center">Edit Data Kondisi Jalan</h3>
             <form method="POST" id="editKondisiJalanForm" class="mt-2 space-y-4">
                 <input type="hidden" name="id" id="edit_kj_id_field">
+                <input type="hidden" name="tahun_lama" id="edit_kj_tahun_lama_field">
                 <div>
                     <label for="edit_kj_gampong_id_field" class="block text-sm font-medium text-gray-700 text-left">Gampong</label>
                     <select name="gampong_id" id="edit_kj_gampong_id_field" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
@@ -934,13 +933,13 @@
         document.getElementById('edit_jk_tahun_field').value = tahun;
         document.getElementById('editJenisKendaraanForm').action = `/data/jenis_kendaraan/edit/${id}`;
         openModal('editJenisKendaraanModal');
-    }
-      function openEditKondisiJalanModal(id, gampong_id, berlubang, jalur_dua, tahun) {
+    }    function openEditKondisiJalanModal(id, gampong_id, berlubang, jalur_dua, tahun) {
         document.getElementById('edit_kj_id_field').value = id;
         document.getElementById('edit_kj_gampong_id_field').value = gampong_id;
         document.getElementById('edit_jalan_berlubang_field').value = berlubang;
         document.getElementById('edit_jalan_jalur_dua_field').value = jalur_dua;
         document.getElementById('edit_kj_tahun_field').value = tahun;
+        document.getElementById('edit_kj_tahun_lama_field').value = tahun; // Set tahun_lama to current tahun
         document.getElementById('editKondisiJalanForm').action = `/data/kondisi_jalan/edit/${id}`;
         openModal('editKondisiJalanModal');
     }

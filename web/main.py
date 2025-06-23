@@ -1418,16 +1418,13 @@ def add_kondisi_jalan():
             gampong_id = request.form['gampong_id']
             jalan_berlubang = request.form['jalan_berlubang']
             jalan_jalur_dua = request.form['jalan_jalur_dua']
-            jalan_tikungan = request.form['jalan_tikungan']
-            jalanan_sempit = request.form['jalanan_sempit']
             tahun = request.form['tahun']
             
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("""INSERT INTO kondisi_jalan (gampong_id, jalan_berlubang, jalan_jalur_dua,
-                              jalan_tikungan, jalanan_sempit, tahun)
-                              VALUES (%s, %s, %s, %s, %s, %s)""",
-                           (gampong_id, jalan_berlubang, jalan_jalur_dua, jalan_tikungan, jalanan_sempit, tahun))
+            cursor.execute("""INSERT INTO kondisi_jalan (gampong_id, jalan_berlubang, jalan_jalur_dua, tahun)
+                              VALUES (%s, %s, %s, %s)""",
+                           (gampong_id, jalan_berlubang, jalan_jalur_dua, tahun))
             conn.commit()
             flash('Data Kondisi Jalan berhasil ditambahkan!', 'success')
         except Exception as e:
@@ -1441,28 +1438,30 @@ def add_kondisi_jalan():
 @app.route('/data/kondisi_jalan/edit/<int:id>', methods=['POST'])
 @login_required
 def edit_kondisi_jalan(id):
+    conn = None
+    cursor = None
     if request.method == 'POST':
         try:
             gampong_id = request.form['gampong_id']
             jalan_berlubang = request.form['jalan_berlubang']
             jalan_jalur_dua = request.form['jalan_jalur_dua']
-            jalan_tikungan = request.form['jalan_tikungan']
-            jalanan_sempit = request.form['jalanan_sempit']
             tahun = request.form['tahun']
+            tahun_lama = request.form['tahun_lama']  # tahun sebelum diedit
             
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("""UPDATE kondisi_jalan SET gampong_id = %s, jalan_berlubang = %s,
-                              jalan_jalur_dua = %s, jalan_tikungan = %s, jalanan_sempit = %s, tahun = %s
-                              WHERE id = %s""",
-                           (gampong_id, jalan_berlubang, jalan_jalur_dua, jalan_tikungan, jalanan_sempit, tahun, id))
+                              jalan_jalur_dua = %s, tahun = %s
+                              WHERE gampong_id = %s AND tahun = %s""",
+                           (gampong_id, jalan_berlubang, jalan_jalur_dua, tahun, gampong_id, tahun_lama))
             conn.commit()
             flash('Data Kondisi Jalan berhasil diperbarui!', 'success')
         except Exception as e:
             flash(f'Error: {str(e)}', 'danger')
         finally:
-            if conn.is_connected():
-                cursor.close()
+            if conn is not None and conn.is_connected():
+                if cursor is not None:
+                    cursor.close()
                 conn.close()
     return redirect(url_for('manage_data_page'))
 
@@ -1600,6 +1599,7 @@ def detail_gampong(nama_gampong):
                  gampong_clustered_info = df_clustered_all[df_clustered_all['nama_gampong'] == nama_gampong]
                  if not gampong_clustered_info.empty:
                      # Buat peta hanya dengan marker gampong ini, tapi dengan info cluster
+
                      map_obj = create_cluster_map_new(gampong_clustered_info)
                      map_html_detail = map_obj._repr_html_()
 
@@ -1716,7 +1716,7 @@ def public_dashboard():
             SELECT g.nama_gampong, SUM(k.jumlah_kecelakaan) as total_kecelakaan
             FROM gampong g
             JOIN kecelakaan k ON g.id = k.gampong_id
-            GROUP BY g.nama_gampong
+            GROUP BY g.id
             ORDER BY total_kecelakaan DESC
             LIMIT 15
         """)
