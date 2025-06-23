@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS `gampong` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table kecelakaan_data.gampong: ~20 rows (approximately)
+-- Dumping data for table kecelakaan_data.gampong: ~5 rows (approximately)
 INSERT INTO `gampong` (`id`, `nama_gampong`) VALUES
 	(1, 'Batuphat'),
 	(2, 'Krueng Geukuh'),
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `jenis_kendaraan` (
 
 -- Dumping data for table kecelakaan_data.jenis_kendaraan: ~60 rows (approximately)
 INSERT INTO `jenis_kendaraan` (`id`, `gampong_id`, `kendaraan_roda_dua`, `kendaraan_roda_4`, `kendaraan_lebih_roda_4`, `kendaraan_lainnya`, `tahun`) VALUES
-	(2, 1, 12, 4, 1, 1, 2022),
+	(2, 1, 12, 7, 1, 1, 2022),
 	(3, 1, 15, 3, 1, 1, 2023),
 	(4, 1, 10, 3, 2, 0, 2024),
 	(6, 2, 8, 3, 1, 0, 2022),
@@ -216,28 +216,28 @@ CREATE TABLE IF NOT EXISTS `koordinat` (
   CONSTRAINT `koordinat_ibfk_1` FOREIGN KEY (`gampong_id`) REFERENCES `gampong` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table kecelakaan_data.koordinat: ~20 rows (approximately)
+-- Dumping data for table kecelakaan_data.koordinat: ~0 rows (approximately)
 INSERT INTO `koordinat` (`id`, `gampong_id`, `latitude`, `longitude`) VALUES
-	(1, 1, 4.52395423, 96.90143505),
-	(2, 2, 4.80191436, 95.77418061),
-	(3, 3, 4.72570175, 95.82904590),
-	(4, 4, 5.30996836, 96.81741270),
-	(5, 5, 5.27855872, 95.14487895),
-	(6, 6, 4.90151345, 95.04134523),
-	(7, 7, 5.43179124, 95.35371672),
-	(8, 8, 4.85745915, 96.27296605),
-	(9, 9, 4.95775790, 96.31303034),
-	(10, 10, 5.45046717, 96.15226314),
-	(11, 11, 5.17430980, 95.83667471),
-	(12, 12, 4.71694168, 96.26722317),
-	(13, 13, 4.97682913, 96.37661381),
-	(14, 14, 5.08125577, 95.65302660),
-	(15, 15, 5.16934610, 96.14782474),
-	(16, 16, 5.10973874, 96.29057419),
-	(17, 17, 4.82525673, 96.34383150),
-	(18, 18, 4.58985375, 95.16488025),
-	(19, 19, 5.28227546, 96.05905620),
-	(20, 20, 4.52753082, 95.39643256);
+	(1, 1, 5.22359300, 97.04638400),
+	(2, 2, 5.24600000, 97.02500000),
+	(3, 3, 5.20823900, 97.06926600),
+	(4, 4, 5.20446500, 97.08631100),
+	(5, 5, 5.20310100, 97.11026300),
+	(6, 6, 5.18975500, 97.11826500),
+	(7, 7, 5.17356700, 97.13144800),
+	(8, 8, 5.15163700, 97.13518700),
+	(9, 9, 5.12968000, 97.15372200),
+	(10, 10, 5.17497800, 97.11558300),
+	(11, 11, 5.17913300, 97.13754000),
+	(12, 12, 5.18555400, 97.13364600),
+	(13, 13, 5.18711900, 97.14385000),
+	(14, 14, 5.16944600, 97.12875000),
+	(15, 15, 5.18330000, 97.14170000),
+	(16, 16, 5.18014200, 97.14203100),
+	(17, 17, 5.17668500, 97.14354000),
+	(18, 18, 5.18843800, 97.13191600),
+	(19, 19, 5.19455700, 97.12819400),
+	(20, 20, 5.20723200, 97.12262600);
 
 -- Dumping structure for table kecelakaan_data.korban
 CREATE TABLE IF NOT EXISTS `korban` (
@@ -252,7 +252,7 @@ CREATE TABLE IF NOT EXISTS `korban` (
   CONSTRAINT `korban_ibfk_1` FOREIGN KEY (`gampong_id`) REFERENCES `gampong` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=81 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table kecelakaan_data.korban: ~60 rows (approximately)
+-- Dumping data for table kecelakaan_data.korban: ~0 rows (approximately)
 INSERT INTO `korban` (`id`, `gampong_id`, `jumlah_meninggal`, `tahun`, `luka_berat`, `luka_ringan`) VALUES
 	(2, 1, 2, 2022, 4, 12),
 	(3, 1, 1, 2023, 5, 14),
@@ -315,9 +315,40 @@ INSERT INTO `korban` (`id`, `gampong_id`, `jumlah_meninggal`, `tahun`, `luka_ber
 	(79, 20, 1, 2023, 2, 6),
 	(80, 20, 2, 2024, 3, 9);
 
+-- Dumping structure for view kecelakaan_data.total_kecelakaan
+-- Creating temporary table to overcome VIEW dependency errors
+CREATE TABLE `total_kecelakaan` (
+	`id` BIGINT(20) UNSIGNED NOT NULL,
+	`gampong_id` INT(10) NOT NULL,
+	`nama_gampong` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`tahun` INT(10) NULL,
+	`jumlah_kecelakaan` BIGINT(19) NOT NULL
+) ENGINE=MyISAM;
+
+-- Dumping structure for view kecelakaan_data.total_korban
+-- Creating temporary table to overcome VIEW dependency errors
+CREATE TABLE `total_korban` (
+	`id` BIGINT(20) UNSIGNED NOT NULL,
+	`gampong_id` INT(10) NOT NULL,
+	`nama_gampong` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`tahun` INT(10) NULL,
+	`jumlah_meninggal` BIGINT(19) NOT NULL,
+	`luka_berat` BIGINT(19) NOT NULL,
+	`luka_ringan` BIGINT(19) NOT NULL,
+	`total_korban` BIGINT(19) NOT NULL
+) ENGINE=MyISAM;
+
 -- Removing temporary table and create final VIEW structure
 DROP TABLE IF EXISTS `kecelakaan`;
 CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `kecelakaan` AS select row_number() OVER (ORDER BY `g`.`id`,coalesce(`kr`.`tahun`,`jk`.`tahun`) )  AS `id`,`g`.`id` AS `gampong_id`,coalesce(`kr`.`tahun`,`jk`.`tahun`) AS `tahun`,least(coalesce((((`jk`.`kendaraan_roda_dua` + `jk`.`kendaraan_roda_4`) + `jk`.`kendaraan_lebih_roda_4`) + `jk`.`kendaraan_lainnya`),0),coalesce(((`kr`.`jumlah_meninggal` + `kr`.`luka_berat`) + `kr`.`luka_ringan`),0)) AS `jumlah_kecelakaan` from ((`gampong` `g` left join `korban` `kr` on((`g`.`id` = `kr`.`gampong_id`))) left join `jenis_kendaraan` `jk` on(((`g`.`id` = `jk`.`gampong_id`) and (`kr`.`tahun` = `jk`.`tahun`)))) where ((`kr`.`tahun` is not null) and (`jk`.`tahun` is not null) and (((((`jk`.`kendaraan_roda_dua` + `jk`.`kendaraan_roda_4`) + `jk`.`kendaraan_lebih_roda_4`) + `jk`.`kendaraan_lainnya`) > 0) or (((`kr`.`jumlah_meninggal` + `kr`.`luka_berat`) + `kr`.`luka_ringan`) > 0))) order by `g`.`id`,coalesce(`kr`.`tahun`,`jk`.`tahun`);
+
+-- Removing temporary table and create final VIEW structure
+DROP TABLE IF EXISTS `total_kecelakaan`;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `total_kecelakaan` AS select row_number() OVER (ORDER BY `g`.`id`,`jk`.`tahun` )  AS `id`,`g`.`id` AS `gampong_id`,`g`.`nama_gampong` AS `nama_gampong`,`jk`.`tahun` AS `tahun`,coalesce((((`jk`.`kendaraan_roda_dua` + `jk`.`kendaraan_roda_4`) + `jk`.`kendaraan_lebih_roda_4`) + `jk`.`kendaraan_lainnya`),0) AS `jumlah_kecelakaan` from (`gampong` `g` left join `jenis_kendaraan` `jk` on((`g`.`id` = `jk`.`gampong_id`))) where ((`jk`.`tahun` is not null) and ((((`jk`.`kendaraan_roda_dua` + `jk`.`kendaraan_roda_4`) + `jk`.`kendaraan_lebih_roda_4`) + `jk`.`kendaraan_lainnya`) > 0)) order by `g`.`id`,`jk`.`tahun`;
+
+-- Removing temporary table and create final VIEW structure
+DROP TABLE IF EXISTS `total_korban`;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `total_korban` AS select row_number() OVER (ORDER BY `g`.`id`,`kr`.`tahun` )  AS `id`,`g`.`id` AS `gampong_id`,`g`.`nama_gampong` AS `nama_gampong`,`kr`.`tahun` AS `tahun`,coalesce(`kr`.`jumlah_meninggal`,0) AS `jumlah_meninggal`,coalesce(`kr`.`luka_berat`,0) AS `luka_berat`,coalesce(`kr`.`luka_ringan`,0) AS `luka_ringan`,coalesce(((`kr`.`jumlah_meninggal` + `kr`.`luka_berat`) + `kr`.`luka_ringan`),0) AS `total_korban` from (`gampong` `g` left join `korban` `kr` on((`g`.`id` = `kr`.`gampong_id`))) where ((`kr`.`tahun` is not null) and (((`kr`.`jumlah_meninggal` + `kr`.`luka_berat`) + `kr`.`luka_ringan`) > 0)) order by `g`.`id`,`kr`.`tahun`;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
