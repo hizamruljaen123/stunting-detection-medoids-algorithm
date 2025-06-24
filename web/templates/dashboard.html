@@ -189,28 +189,53 @@
                 </form>
             </div>
         </div>
-        <div class="p-4" id="mapContainer">
-            {% if map_html %}
+        <div class="p-4" id="mapContainer">            {% if map_html %}
                 <div class="rounded-lg overflow-hidden border border-gray-200">
                     {{ map_html|safe }}
                 </div>
+                <!-- Legenda warna untuk pin maps -->
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h4 class="text-sm font-semibold text-gray-800 mb-3">📍 Legenda Tingkat Keparahan:</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-green-600 mr-2"></div>
+                            <span class="text-sm text-gray-700">Aman</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-blue-600 mr-2"></div>
+                            <span class="text-sm text-gray-700">Waspada</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-blue-600 mr-2"></div>
+                            <span class="text-sm text-gray-700">Siaga</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 rounded-full bg-red-600 mr-2"></div>
+                            <span class="text-sm text-gray-700">Awas</span>
+                        </div>
+                    </div>
+                </div>
                 <!-- Display filter information -->
-                <div class="mt-3 text-sm text-gray-600">
-                    {% if selected_year_map and selected_year_map != 'all' %}
-                        <p class="flex items-center">
+                <div class="mt-3 text-sm text-gray-600">                    {% if selected_year_map and selected_year_map != 'all' %}
+                        <p class="flex items-center mb-2">
                             <svg class="w-4 h-4 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                             Menampilkan data kecelakaan untuk tahun <strong>{{ selected_year_map }}</strong>
                         </p>
                     {% else %}
-                        <p class="flex items-center">
+                        <p class="flex items-center mb-2">
                             <svg class="w-4 h-4 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                             Menampilkan data kecelakaan untuk <strong>semua tahun</strong>
                         </p>
                     {% endif %}
+                    <p class="text-xs text-gray-500">
+                        💡 Pin berwarna berdasarkan tingkat keparahan: <span class="text-green-600 font-semibold">Hijau (Aman)</span>, 
+                        <span class="text-blue-600 font-semibold">Biru (Waspada/Siaga)</span>, 
+                        <span class="text-red-600 font-semibold">Merah (Awas)</span>
+                    </p>
                 </div>
             {% else %}
                 <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">

@@ -383,10 +383,9 @@ def create_cluster_map_new(df_clustered):
                 </div>
                 
                 <!-- Data Kecelakaan -->
-                <div style="background-color: #fff3cd; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #ffc107;">
-                    <h5 style="margin:0 0 8px 0; color:#856404; display: flex; align-items: center;">
+                <div style="background-color: #fff3cd; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #ffc107;">                    <h5 style="margin:0 0 8px 0; color:#856404; display: flex; align-items: center;">
                         🚗 Data Kecelakaan
-                        <span style="margin-left: auto; font-size: 0.8em; padding: 2px 8px; background: {'#dc3545' if accident_severity == 'Awas' else '#fd7e14' if accident_severity == 'Siaga' else '#198754' if accident_severity == 'Aman' else '#0dcaf0'}; color: white; border-radius: 12px;">
+                        <span style="margin-left: auto; font-size: 0.8em; padding: 2px 8px; background: {'#dc3545' if accident_severity == 'Awas' else '#007bff' if accident_severity == 'Siaga' else '#198754' if accident_severity == 'Aman' else '#007bff'}; color: white; border-radius: 12px;">
                             {accident_severity}
                         </span>
                     </h5>
@@ -412,8 +411,7 @@ def create_cluster_map_new(df_clustered):
                 </div>
                 
                 <!-- Data Korban -->
-                <div style="background-color: #d1ecf1; padding: 12px; border-radius: 6px; border-left: 4px solid #17a2b8;">
-                    <h5 style="margin:0 0 8px 0; color:#0c5460; display: flex; align-items: center;">
+                <div style="background-color: #d1ecf1; padding: 12px; border-radius: 6px; border-left: 4px solid #17a2b8;">                    <h5 style="margin:0 0 8px 0; color:#0c5460; display: flex; align-items: center;">
                         🏥 Data Korban
                         
                     </h5>
@@ -446,16 +444,16 @@ def create_cluster_map_new(df_clustered):
             # Calculate marker size based on combined impact (accidents + victims)
             combined_impact = total_kasus + total_korban
             marker_size = max(8, min(combined_impact / 3, 25))
-            
-            # Determine marker color based on severity
+              # Determine marker color based on severity
+            # Awas: Merah, Aman: Hijau, Siaga: Biru, Waspada: Biru
             if accident_severity == 'Awas' or victim_severity == 'Awas':
-                marker_color = '#dc3545'  # Red
+                marker_color = '#dc3545'  # Red for Awas
             elif accident_severity == 'Siaga' or victim_severity == 'Siaga':
-                marker_color = '#fd7e14'  # Orange
+                marker_color = '#007bff'  # Blue for Siaga
             elif accident_severity == 'Waspada' or victim_severity == 'Waspada':
-                marker_color = '#ffc107'  # Yellow
+                marker_color = '#007bff'  # Blue for Waspada
             else:
-                marker_color = '#198754'  # Green
+                marker_color = '#198754'  # Green for Aman
             
             # Add single combined marker
             folium.CircleMarker(
@@ -585,22 +583,33 @@ def dashboard():
         # Get available years for the filter using the new views
         cursor.execute("SELECT DISTINCT tahun FROM total_kecelakaan ORDER BY tahun DESC")
         available_years = [str(row['tahun']) for row in cursor.fetchall()]
-        selected_year_map = request.args.get('year_map', 'all')
-
-        # Total kecelakaan using new view
-        cursor.execute("SELECT SUM(jumlah_kecelakaan) as total FROM total_kecelakaan")
+        selected_year_map = request.args.get('year_map', 'all')        # Total kecelakaan using new view with filter
+        if selected_year_map and selected_year_map != 'all':
+            cursor.execute("SELECT SUM(jumlah_kecelakaan) as total FROM total_kecelakaan WHERE tahun = %s", (selected_year_map,))
+        else:
+            cursor.execute("SELECT SUM(jumlah_kecelakaan) as total FROM total_kecelakaan")
         total_kecelakaan = cursor.fetchone()['total'] or 0
         
-        # Total korban using new view
-        cursor.execute("SELECT SUM(total_korban) as total FROM total_korban")
+        # Total korban using new view with filter
+        if selected_year_map and selected_year_map != 'all':
+            cursor.execute("SELECT SUM(total_korban) as total FROM total_korban WHERE tahun = %s", (selected_year_map,))
+        else:
+            cursor.execute("SELECT SUM(total_korban) as total FROM total_korban")
         total_korban = cursor.fetchone()['total'] or 0
 
-        # Gampong paling rawan (berdasarkan jumlah kecelakaan > 10)
-        cursor.execute("""
-            SELECT COUNT(DISTINCT gampong_id) as total
-            FROM total_kecelakaan
-            WHERE jumlah_kecelakaan > 30 
-        """)
+        # Gampong paling rawan (berdasarkan jumlah kecelakaan > 30) with filter
+        if selected_year_map and selected_year_map != 'all':
+            cursor.execute("""
+                SELECT COUNT(DISTINCT gampong_id) as total
+                FROM total_kecelakaan
+                WHERE jumlah_kecelakaan > 30 AND tahun = %s
+            """, (selected_year_map,))
+        else:
+            cursor.execute("""
+                SELECT COUNT(DISTINCT gampong_id) as total
+                FROM total_kecelakaan
+                WHERE jumlah_kecelakaan > 30 
+            """)
         gampong_rawan = cursor.fetchone()['total'] or 0
 
         # Data untuk chart distribusi jenis kendaraan
@@ -648,32 +657,46 @@ def dashboard():
         korban_summary_raw = cursor.fetchall()
         korban_summary_labels = [str(r['tahun']) for r in korban_summary_raw]
         korban_summary_data = [int(r['total_per_tahun']) for r in korban_summary_raw]
-        
-        # Data untuk chart distribusi jenis korban (meninggal, luka berat, luka ringan)
-        cursor.execute("""
-            SELECT 
-                SUM(jumlah_meninggal) as total_meninggal,
-                SUM(luka_berat) as total_luka_berat,
-                SUM(luka_ringan) as total_luka_ringan
-            FROM total_korban
-        """)
+          # Data untuk chart distribusi jenis korban (meninggal, luka berat, luka ringan) with filter
+        if selected_year_map and selected_year_map != 'all':
+            cursor.execute("""
+                SELECT 
+                    SUM(jumlah_meninggal) as total_meninggal,
+                    SUM(luka_berat) as total_luka_berat,
+                    SUM(luka_ringan) as total_luka_ringan
+                FROM total_korban
+                WHERE tahun = %s
+            """, (selected_year_map,))
+        else:
+            cursor.execute("""
+                SELECT 
+                    SUM(jumlah_meninggal) as total_meninggal,
+                    SUM(luka_berat) as total_luka_berat,
+                    SUM(luka_ringan) as total_luka_ringan
+                FROM total_korban
+            """)
         jenis_korban_row = cursor.fetchone()
         jenis_korban_labels = ["Meninggal", "Luka Berat", "Luka Ringan"]
         jenis_korban_data = [
             int(jenis_korban_row['total_meninggal'] or 0), 
             int(jenis_korban_row['total_luka_berat'] or 0), 
             int(jenis_korban_row['total_luka_ringan'] or 0)
-        ]
-
-        # Ambil data gabungan untuk peta klaster di dashboard
-        df_combined = get_combined_data() # Tanpa filter untuk dashboard
+        ]# Ambil data gabungan untuk peta klaster di dashboard dengan filter tahun
+        df_combined = get_combined_data(tahun_filter=selected_year_map if selected_year_map != 'all' else None)
         map_html = None
         if not df_combined.empty:
-            df_clustered, _ = process_data_for_k_medoids(df_combined.copy(), k=3)
-            map_with_clusters = create_cluster_map_new(df_clustered)
-            map_html = map_with_clusters._repr_html_()
+            try:
+                df_clustered, _ = process_data_for_k_medoids(df_combined.copy(), k=3)
+                map_with_clusters = create_cluster_map_new(df_clustered)
+                map_html = map_with_clusters._repr_html_()
+            except Exception as e:
+                app.logger.error(f"Error creating cluster map: {e}")
+                map_html = "<p>Error memuat peta klaster.</p>"
         else:
-            map_html = "<p>Data tidak tersedia untuk membuat peta.</p>"
+            if selected_year_map and selected_year_map != 'all':
+                map_html = f"<p>Tidak ada data untuk tahun {selected_year_map}.</p>"
+            else:
+                map_html = "<p>Data tidak tersedia untuk membuat peta.</p>"
             
         # Generate HTML for charts
         accidents_pie_chart = create_pie_chart_summary(jenis_kendaraan_labels, jenis_kendaraan_data, "Distribusi Jenis Kendaraan")
