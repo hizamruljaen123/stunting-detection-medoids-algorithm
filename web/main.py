@@ -443,17 +443,16 @@ def create_cluster_map_new(df_clustered):
             
             # Calculate marker size based on combined impact (accidents + victims)
             combined_impact = total_kasus + total_korban
-            marker_size = max(8, min(combined_impact / 3, 25))
-              # Determine marker color based on severity
-            # Awas: Merah, Aman: Hijau, Siaga: Biru, Waspada: Biru
+            marker_size = max(8, min(combined_impact / 3, 25))              # Determine marker color based on severity
+            # Awas: Merah, Siaga/Waspada: Hijau, Aman: Biru
             if accident_severity == 'Awas' or victim_severity == 'Awas':
                 marker_color = '#dc3545'  # Red for Awas
             elif accident_severity == 'Siaga' or victim_severity == 'Siaga':
-                marker_color = '#007bff'  # Blue for Siaga
+                marker_color = '#007bff'  # Green for Siaga
             elif accident_severity == 'Waspada' or victim_severity == 'Waspada':
-                marker_color = '#007bff'  # Blue for Waspada
+                marker_color = '#007bff'  # Green for Waspada
             else:
-                marker_color = '#198754'  # Green for Aman
+                marker_color = '#198754'  # Blue for Aman
             
             # Add single combined marker
             folium.CircleMarker(
