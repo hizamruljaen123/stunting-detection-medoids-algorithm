@@ -303,14 +303,31 @@ def create_cluster_map_new(df_clustered):
     aceh_center = [4.6, 96.7] # Koordinat pusat Aceh (perkiraan)
     m = folium.Map(location=aceh_center, zoom_start=9)
     
-    folium.TileLayer('openstreetmap').add_to(m)
-    folium.TileLayer('stamenterrain', attr='Stamen Terrain').add_to(m)
+    # Add base layers
+    folium.TileLayer('openstreetmap', name='OpenStreetMap').add_to(m)
     
-    # Create separate cluster groups for accidents and victims
-    accident_cluster_group = MarkerCluster(name='Klaster Kecelakaan').add_to(m)
-    victim_cluster_group = MarkerCluster(name='Klaster Korban').add_to(m)
+    # Add terrain layer using OpenTopoMap
+    folium.TileLayer(
+        tiles='https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+        attr='Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+        name='Terrain',
+        overlay=False,
+        control=True
+    ).add_to(m)
     
-    # Add new cluster group for overall clusters based on K-medoids
+    # Add satellite layer using Esri World Imagery
+    folium.TileLayer(
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        attr='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        name='Satelit',
+        overlay=False,
+        control=True
+    ).add_to(m)
+    
+    # Create single cluster group for combined data
+    combined_cluster_group = MarkerCluster(name='Data Kecelakaan & Korban').add_to(m)
+    
+    # Add cluster group for K-medoids clusters
     medoid_cluster_group = folium.FeatureGroup(name='Klaster K-Medoids').add_to(m)
     
     colors = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'lightred', 'beige', 'darkblue', 'darkgreen', 'cadetblue', 'pink']
@@ -353,79 +370,108 @@ def create_cluster_map_new(df_clustered):
             accident_severity = classify_severity(total_kasus)
             victim_severity = classify_severity(total_korban)
             
-            # Common header for both popups
-            common_header = f"""
-            <div style="width: 300px;">
-                <h4 style="margin:0;padding:0;color:{color}">
-                    {gampong_name} (Tahun: {row.get('tahun', 'N/A')})
-                </h4>
-                <p style="margin:5px 0;">
-                    <b>Klaster:</b> {cluster_id}
-                </p>
-            """
-            
-            # Popup content for accidents
-            accident_popup_content = common_header + f"""
-                <div style="background-color: #f8f9fa; padding: 8px; border-radius: 4px; margin-bottom: 10px;">
-                    <h5 style="margin:5px 0;color:#dc3545;">Data Kecelakaan</h5>
-                    <p><b>Tingkat Keparahan:</b> <span style="color:{'red' if accident_severity == 'Awas' else 'orange' if accident_severity == 'Siaga' else 'blue'}">{accident_severity}</span></p>
-                    <p><b>Total Kasus Kecelakaan:</b> {total_kasus}</p>
+            # Combined popup content with both accident and victim data
+            combined_popup_content = f"""
+            <div style="width: 350px; font-family: Arial, sans-serif;">
+                <div style="background: linear-gradient(135deg, {color}, {color}77); padding: 15px; margin: -10px -10px 15px -10px; border-radius: 8px 8px 0 0;">
+                    <h4 >
+                        📍 {gampong_name}
+                    </h4>
+                    <p style="margin:8px 0 0 0; font-size: 0.9em;">
+                        📅 Tahun: {row.get('tahun', 'N/A')} | 🏷️ Klaster: {cluster_id}
+                    </p>
                 </div>
                 
-                <h5 style="margin:10px 0 5px 0;">Detail Kendaraan Terlibat</h5>
-                <ul style="margin:0;padding-left:15px;font-size:0.9em;">
-                    <li>Roda 2: {row.get('kendaraan_roda_dua', 0)}</li>
-                    <li>Roda 4: {row.get('kendaraan_roda_4', 0)}</li>
-                    <li>Roda >4: {row.get('kendaraan_lebih_roda_4', 0)}</li>
-                    <li>Lainnya: {row.get('kendaraan_lainnya', 0)}</li>
-                </ul>
+                <!-- Data Kecelakaan -->
+                <div style="background-color: #fff3cd; padding: 12px; border-radius: 6px; margin-bottom: 12px; border-left: 4px solid #ffc107;">
+                    <h5 style="margin:0 0 8px 0; color:#856404; display: flex; align-items: center;">
+                        🚗 Data Kecelakaan
+                        <span style="margin-left: auto; font-size: 0.8em; padding: 2px 8px; background: {'#dc3545' if accident_severity == 'Awas' else '#fd7e14' if accident_severity == 'Siaga' else '#198754' if accident_severity == 'Aman' else '#0dcaf0'}; color: white; border-radius: 12px;">
+                            {accident_severity}
+                        </span>
+                    </h5>
+                    <p style="margin: 4px 0; font-size: 1.1em; font-weight: bold; color: #212529;">
+                        🔢 Total Kecelakaan: <span style="color: #dc3545;">{total_kasus}</span>
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                        <div>
+                            <p style="margin: 2px 0; font-size: 0.9em; color: #6c757d;">🏍️ Roda 2: <strong>{row.get('kendaraan_roda_dua', 0)}</strong></p>
+                            <p style="margin: 2px 0; font-size: 0.9em; color: #6c757d;">🚗 Roda 4: <strong>{row.get('kendaraan_roda_4', 0)}</strong></p>
+                        </div>
+                        <div>
+                            <p style="margin: 2px 0; font-size: 0.9em; color: #6c757d;">🚛 Roda >4: <strong>{row.get('kendaraan_lebih_roda_4', 0)}</strong></p>
+                            <p style="margin: 2px 0; font-size: 0.9em; color: #6c757d;">🚲 Lainnya: <strong>{row.get('kendaraan_lainnya', 0)}</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6;">
+                        <p style="margin: 2px 0; font-size: 0.9em; color: #6c757d;">🕳️ Jalan Berlubang: <strong>{row.get('jalan_berlubang', 0)}</strong></p>
+                        <p style="margin: 2px 0; font-size: 0.9em; color: #6c757d;">🛣️ Jalan Jalur Dua: <strong>{row.get('jalan_jalur_dua', 0)}</strong></p>
+                    </div>
+                </div>
                 
-                <h5 style="margin:10px 0 5px 0;">Kondisi Jalan</h5>
-                <ul style="margin:0;padding-left:15px;font-size:0.9em;">
-                    <li>Berlubang: {row.get('jalan_berlubang', 0)}</li>
-                    <li>Jalur Dua: {row.get('jalan_jalur_dua', 0)}</li>
-                </ul>
+                <!-- Data Korban -->
+                <div style="background-color: #d1ecf1; padding: 12px; border-radius: 6px; border-left: 4px solid #17a2b8;">
+                    <h5 style="margin:0 0 8px 0; color:#0c5460; display: flex; align-items: center;">
+                        🏥 Data Korban
+                        <span style="margin-left: auto; font-size: 0.8em; padding: 2px 8px; background: {'#dc3545' if victim_severity == 'Awas' else '#fd7e14' if victim_severity == 'Siaga' else '#198754' if victim_severity == 'Aman' else '#0dcaf0'}; color: white; border-radius: 12px;">
+                            {victim_severity}
+                        </span>
+                    </h5>
+                    <p style="margin: 4px 0; font-size: 1.1em; font-weight: bold; color: #212529;">
+                        👥 Total Korban: <span style="color: #0d6efd;">{total_korban}</span>
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px;">
+                        <div style="text-align: center; padding: 8px; background: #f8d7da; border-radius: 4px;">
+                            <p style="margin: 0; font-size: 0.8em; color: #721c24;">💀 Meninggal</p>
+                            <p style="margin: 2px 0 0 0; font-size: 1.2em; font-weight: bold; color: #721c24;">{total_meninggal}</p>
+                        </div>
+                        <div style="text-align: center; padding: 8px; background: #fff3cd; border-radius: 4px;">
+                            <p style="margin: 0; font-size: 0.8em; color: #856404;">🤕 Luka Berat</p>
+                            <p style="margin: 2px 0 0 0; font-size: 1.2em; font-weight: bold; color: #856404;">{total_luka_berat}</p>
+                        </div>
+                        <div style="text-align: center; padding: 8px; background: #d4edda; border-radius: 4px;">
+                            <p style="margin: 0; font-size: 0.8em; color: #155724;">🩹 Luka Ringan</p>
+                            <p style="margin: 2px 0 0 0; font-size: 1.2em; font-weight: bold; color: #155724;">{total_luka_ringan}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 12px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 0.8em; color: #6c757d;">
+                    💡 Klik marker untuk detail lebih lanjut
+                </div>
             </div>
             """
             
-            # Popup content for victims
-            victim_popup_content = common_header + f"""
-                <div style="background-color: #f8f9fa; padding: 8px; border-radius: 4px; margin-bottom: 10px;">
-                    <h5 style="margin:5px 0;color:#0d6efd;">Data Korban</h5>
-                    <p><b>Tingkat Keparahan:</b> <span style="color:{'red' if victim_severity == 'Awas' else 'orange' if victim_severity == 'Siaga' else 'blue'}">{victim_severity}</span></p>
-                    <p><b>Total Korban:</b> {total_korban}</p>
-                </div>
-                
-                <h5 style="margin:10px 0 5px 0;">Rincian Korban</h5>
-                <ul style="margin:0;padding-left:15px;font-size:0.9em;">
-                    <li>Meninggal: {total_meninggal}</li>
-                    <li>Luka Berat: {total_luka_berat}</li>
-                    <li>Luka Ringan: {total_luka_ringan}</li>
-                </ul>
-            </div>
-            """
+            # Calculate marker size based on combined impact (accidents + victims)
+            combined_impact = total_kasus + total_korban
+            marker_size = max(8, min(combined_impact / 3, 25))
             
-            # Add markers to appropriate cluster groups
-            # Accident marker (red color scheme)
+            # Determine marker color based on severity
+            if accident_severity == 'Awas' or victim_severity == 'Awas':
+                marker_color = '#dc3545'  # Red
+            elif accident_severity == 'Siaga' or victim_severity == 'Siaga':
+                marker_color = '#fd7e14'  # Orange
+            elif accident_severity == 'Waspada' or victim_severity == 'Waspada':
+                marker_color = '#ffc107'  # Yellow
+            else:
+                marker_color = '#198754'  # Green
+            
+            # Add single combined marker
             folium.CircleMarker(
                 location=[lat, lon],
-                radius=max(5, min(total_kasus / 2, 15)),  # Scale based on accident count
-                popup=folium.Popup(accident_popup_content, max_width=300),
-                color='red',
+                radius=marker_size,
+                popup=folium.Popup(combined_popup_content, max_width=380),
+                color=marker_color,
                 fill=True,
-                fill_opacity=0.7,
-                tooltip=f"{gampong_name}: {total_kasus} kecelakaan"
-            ).add_to(accident_cluster_group)
-            
-            # Victim marker (blue color scheme)
-            folium.CircleMarker(
-                location=[lat + 0.001, lon + 0.001],  # Slight offset to avoid perfect overlap                radius=max(5, min(total_korban / 2, 15)),  # Scale based on victim count
-                popup=folium.Popup(victim_popup_content, max_width=300),
-                color='blue',
-                fill=True,
-                fill_opacity=0.7,
-                tooltip=f"{gampong_name}: {total_korban} korban"
-            ).add_to(victim_cluster_group)
+                fillColor=marker_color,
+                fillOpacity=0.8,
+                weight=2,
+                opacity=0.9,
+                tooltip=f"🏘️ {gampong_name}<br/>🚗 {total_kasus} kecelakaan | 👥 {total_korban} korban"
+            ).add_to(combined_cluster_group)
                 
         except Exception as e:
             app.logger.error(f"Error adding marker for {row.get('nama_gampong', 'unknown')}: {e}")

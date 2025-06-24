@@ -279,3 +279,194 @@
 .legend-box:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
+
+/* Enhanced popup styling for combined accident and victim data */
+.combined-popup {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.4;
+}
+
+.combined-popup .popup-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    margin: -10px -10px 15px -10px;
+    border-radius: 8px 8px 0 0;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.combined-popup .popup-header h4 {
+    margin: 0;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.combined-popup .popup-header p {
+    margin: 8px 0 0 0;
+    font-size: 0.9em;
+    opacity: 0.95;
+}
+
+.combined-popup .data-section {
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    border-left: 4px solid;
+    transition: all 0.2s ease;
+}
+
+.combined-popup .data-section:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.combined-popup .data-section.accident-section {
+    background-color: #fff3cd;
+    border-left-color: #ffc107;
+}
+
+.combined-popup .data-section.victim-section {
+    background-color: #d1ecf1;
+    border-left-color: #17a2b8;
+}
+
+.combined-popup .section-header {
+    display: flex;
+    align-items: center;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.combined-popup .section-header .severity-badge {
+    margin-left: auto;
+    font-size: 0.8em;
+    padding: 2px 8px;
+    color: white;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.combined-popup .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.combined-popup .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.combined-popup .stat-card {
+    text-align: center;
+    padding: 8px;
+    border-radius: 4px;
+    transition: transform 0.2s ease;
+}
+
+.combined-popup .stat-card:hover {
+    transform: scale(1.05);
+}
+
+.combined-popup .stat-card.death {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.combined-popup .stat-card.severe {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.combined-popup .stat-card.mild {
+    background: #d4edda;
+    color: #155724;
+}
+
+.combined-popup .stat-card p {
+    margin: 0;
+}
+
+.combined-popup .stat-card .stat-label {
+    font-size: 0.8em;
+}
+
+.combined-popup .stat-card .stat-value {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+.combined-popup .detail-item {
+    margin: 2px 0;
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.combined-popup .detail-item strong {
+    color: #212529;
+}
+
+.combined-popup .popup-footer {
+    text-align: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+/* Enhanced marker animations for combined data */
+.combined-marker {
+    position: relative;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.combined-marker::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 50%;
+    border: 2px solid;
+    animation: pulse-combined 2s infinite;
+    opacity: 0;
+}
+
+@keyframes pulse-combined {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+
+/* Responsive popup adjustments */
+@media (max-width: 768px) {
+    .combined-popup .grid-2,
+    .combined-popup .grid-3 {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    
+    .combined-popup .data-section {
+        padding: 8px;
+    }
+    
+    .combined-popup .popup-header {
+        padding: 12px;
+    }
+}
