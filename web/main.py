@@ -415,9 +415,7 @@ def create_cluster_map_new(df_clustered):
                 <div style="background-color: #d1ecf1; padding: 12px; border-radius: 6px; border-left: 4px solid #17a2b8;">
                     <h5 style="margin:0 0 8px 0; color:#0c5460; display: flex; align-items: center;">
                         🏥 Data Korban
-                        <span style="margin-left: auto; font-size: 0.8em; padding: 2px 8px; background: {'#dc3545' if victim_severity == 'Awas' else '#fd7e14' if victim_severity == 'Siaga' else '#198754' if victim_severity == 'Aman' else '#0dcaf0'}; color: white; border-radius: 12px;">
-                            {victim_severity}
-                        </span>
+                        
                     </h5>
                     <p style="margin: 4px 0; font-size: 1.1em; font-weight: bold; color: #212529;">
                         👥 Total Korban: <span style="color: #0d6efd;">{total_korban}</span>
